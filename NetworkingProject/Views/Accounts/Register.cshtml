@@ -1,0 +1,111 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Register</title>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/stylesheet.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/main.css">
+    <link id="css-link" rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/newtheme.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/slick.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/slick-theme.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/bootstrap-datetimepicker.min.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+
+
+</head>
+<body>
+    <div class="login_page_rightside pull-right">
+
+        <div class="row hidden-lg hidden-md">
+            <div class="col-xs-12 text-center">
+                <a href="https://www.isradon.com/index.php?route=common/home"><i class="is_home"></i>на главную</a>
+            </div>
+        </div>
+
+
+        <div id="content" class="col-sm-6 contant">
+            <div class="main_title text-center hidden-xs hidden-sm">
+                <h2>Registry</h2>
+                <p>To register please fill the following :</p>
+            </div>
+
+            <div class="main_title text-center hidden-lg hidden-md">
+                <h2>Registry</h2>
+                <p>To register please fill the following :</p>
+            </div>
+
+            <br>
+            <form id="register-form" action="/Accounts/Register" method="post" enctype="multipart/form-data">
+
+                <div class="form-group required">
+                    <label class="control-label" for="input-email">Email</label>
+                    <input type="text" name="Email" value="" placeholder="Enter your email address here" id="input-email" class="form-control">
+                    <input type="hidden" name="user_action" value="register">
+                </div>
+
+                <div class="form-group required">
+                    <label class="control-label" for="input-password">Password</label>
+                    <input type="password" name="Password" value="" placeholder="Enter your password here" id="input-password" class="form-control">    
+                </div>
+
+                <div class="form-group required">
+                    <label class="control-label" for="input-firstname">First name</label>
+                    <input type="text" name="FirstName" value="" placeholder="Enter your first name here" id="input-firstname" class="form-control">
+                </div>
+
+                <div class="form-group required">
+                    <label class="control-label" for="input-lastname">Last name</label>
+                    <input type="text" name="LastName" value="" placeholder="Enter your last name here" id="input-lastname" class="form-control">
+                </div>
+
+                <div class="form-group required">
+                    <label class="control-label" for="input-telephone">Phone number</label>
+                    <input type="text" name="PhoneNumber" value="" placeholder="Enter your phone number here" id="input-telephone" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="input-birthday">Date of birth</label>
+                    <input type="date" name="DateOfBirth" value="" placeholder="Enter your DoB here" id="input-birthday" class="form-control" max="2024-12-07" min="1924-12-07">   
+                </div>
+
+                <button type="submit" value="Подтвердить" class="login_btn btn-block">Register</button>
+
+            </form>
+
+
+
+            @*<div class="social_login">
+
+            <div class="or"><span>Войти с помощью Facebook</span></div>
+            <a class="socalicon" href="https://www.facebook.com/v3.2/dialog/oauth?client_id=187591585178192&amp;state=38dad99551135b1b55e94cd49235d670&amp;response_type=code&amp;sdk=php-sdk-5.6.3&amp;redirect_uri=https%3A%2F%2Fwww.isradon.com%2Findex.php%3Froute%3Dextension%2Fmodule%2Ftmdsociallogin%2Ffbredirecturl&amp;scope=email">
+                <img class="img-responsive img-full" src="https://www.isradon.com/image/cache/catalog/sociallogin/facebook_icon-492x42.webp" data-toggle="tooltip" title="Войти с помощью Facebook">
+            </a>
+            <div class="or"><span>Войти с помощью Google</span></div>
+            <a class="socalicon" href="https://accounts.google.com/o/oauth2/auth?response_type=code&amp;redirect_uri=https%3A%2F%2Fwww.isradon.com%2Findex.php%3Froute%3Dextension%2Fmodule%2Ftmdsociallogin%2Fgogleredirect&amp;client_id=979231351367-fehccufj90jer2lu8vnincg1f4ruqf0h.apps.googleusercontent.com&amp;scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email&amp;access_type=offline&amp;approval_prompt=force">
+                <img class="img-responsive img-full" src="https://www.isradon.com/image/cache/catalog/sociallogin/google_plus-492x42.webp" data-toggle="tooltip" alt="Войти с помощью Google" title="Войти с помощью Google">
+            </a>
+        </div>*@
+
+            <style>
+                .socalicon {
+                    margin-right: 10px;
+                    margin-bottom: 10px;
+                }
+            </style>
+        </div>
+    </div>
+</body>
+</html>
