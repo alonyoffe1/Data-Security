@@ -18,6 +18,12 @@ namespace NetworkingProject
                 url: "{controller}/{action}/{id}",
                 defaults: new { controller = "HomePage", action = "Index", id = UrlParameter.Optional }
             );
+
+            routes.MapRoute(
+                name: "Catalog",
+                url: "Books/Catalog",
+                defaults: new { controller = "Book", action = "Catalog", id = UrlParameter.Optional }
+            );
         }
     }
 }
