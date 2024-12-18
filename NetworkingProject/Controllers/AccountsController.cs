@@ -24,22 +24,52 @@ namespace NetworkingProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Replace this with real authentication logic
-                if (IsValidUser(model))
+                // Establish the connection string from your Web.config
+                string connectionString = ConfigurationManager.ConnectionStrings["MyDbConnection"].ToString();
+
+                // Create SQL query to check if user exists and credentials match
+                string query = "SELECT COUNT(1) FROM Users WHERE Email = @Email AND Password = @Password";
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
                 {
-                    // Redirect to a logged-in page, such as "Index" of "Dashboard"
-                    return RedirectToAction("Index", "Dashboard");
-                }
-                else
-                {
-                    // Add an error message for invalid credentials
-                    ModelState.AddModelError("", "Invalid email or password.");
+                    try
+                    {
+                        // Open the connection
+                        connection.Open();
+
+                        using (SqlCommand cmd = new SqlCommand(query, connection))
+                        {
+                            // Add parameters to prevent SQL injection
+                            cmd.Parameters.AddWithValue("@Email", model.Email);
+                            cmd.Parameters.AddWithValue("@Password", model.Password); // Ensure Password is hashed in a real app
+
+                            // Execute the query and check if a match was found
+                            int userCount = Convert.ToInt32(cmd.ExecuteScalar());
+
+                            if (userCount == 1)
+                            {
+                                // Redirect to a logged-in page, such as "Index" of "Dashboard"
+                                return RedirectToAction("Index", "Dashboard");
+                            }
+                            else
+                            {
+                                // Add an error message for invalid credentials
+                                ModelState.AddModelError("", "Invalid email or password.");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Handle exceptions (e.g., log the error)
+                        ModelState.AddModelError("", "Error occurred while signing in: " + ex.Message);
+                    }
                 }
             }
 
-            // If validation fails, return the view with the current model
+            // If validation fails or user not found, return the view with the current model
             return View(model);
         }
+
 
 
         private bool IsValidUser(SignInModel model)

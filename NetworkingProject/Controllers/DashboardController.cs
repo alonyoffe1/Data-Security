@@ -13,5 +13,10 @@ namespace NetworkingProject.Controllers
         {
             return View();
         }
+
+        public ActionResult CartPage()
+        {
+            return View();
+        }
     }
 }
