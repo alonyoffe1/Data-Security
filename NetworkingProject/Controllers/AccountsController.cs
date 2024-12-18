@@ -24,29 +24,46 @@ namespace NetworkingProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Replace this with real authentication logic
-                if (IsValidUser(model))
+                string connectionString = ConfigurationManager.ConnectionStrings["MyDbConnection"].ToString();
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
                 {
-                    // Redirect to a logged-in page, such as "Index" of "Dashboard"
-                    return RedirectToAction("Index", "Dashboard");
-                }
-                else
-                {
-                    // Add an error message for invalid credentials
-                    ModelState.AddModelError("", "Invalid email or password.");
+                    try
+                    {
+                        connection.Open();
+
+                        // Query to check if the email and password match
+                        string query = "SELECT COUNT(1) FROM Users WHERE Email = @Email AND Password = @Password";
+
+                        using (SqlCommand cmd = new SqlCommand(query, connection))
+                        {
+                            cmd.Parameters.AddWithValue("@Email", model.Email);
+                            cmd.Parameters.AddWithValue("@Password", model.Password); // Ensure password is securely hashed and compared
+
+                            int count = (int)cmd.ExecuteScalar();
+
+                            if (count == 1)
+                            {
+                                // Successful login, redirect to home page
+                                return RedirectToAction("Index", "Dashboard");
+                            }
+                            else
+                            {
+                                // Invalid login attempt
+                                ModelState.AddModelError("", "Invalid email or password.");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error (you can use a logger instead of displaying the exception)
+                        ModelState.AddModelError("", "An error occurred while processing your request: " + ex.Message);
+                    }
                 }
             }
 
-            // If validation fails, return the view with the current model
+            // If validation fails or login is unsuccessful, return the same view with errors
             return View(model);
-        }
-
-
-        private bool IsValidUser(SignInModel model)
-        {
-            // Log or debug to check values
-            Debug.WriteLine($"Email: {model.Email}, Password: {model.Password}");
-            return true;
         }
 
 

@@ -152,6 +152,7 @@
     <Content Include="Content\bootstrap.rtl.min.css" />
     <Content Include="css\SignIn_Page_assets\bootstrap-datetimepicker.min.css" />
     <Content Include="css\SignIn_Page_assets\bootstrap.min.css" />
+    <Content Include="css\SignIn_Page_assets\cart.svg" />
     <Content Include="css\SignIn_Page_assets\main.css" />
     <Content Include="css\SignIn_Page_assets\newtheme.css" />
     <Content Include="css\SignIn_Page_assets\slick-theme.css" />
@@ -192,6 +193,7 @@
     <Content Include="Views\Accounts\SignIn.cshtml" />
     <Content Include="Views\Dashboard\Index.cshtml" />
     <Content Include="Views\Accounts\Register.cshtml" />
+    <Content Include="Views\Dashboard\CartPage.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

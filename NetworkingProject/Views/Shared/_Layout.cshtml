@@ -81,7 +81,7 @@
                     width: 90px; /* Fixed width for the button */
                     position: absolute; /* Position the button independently */
                     top: 50%; /* Vertically center the button */
-                    right: 275px; /* Adjust the distance from the right edge */
+                    right: 265px; /* Adjust the distance from the right edge */
                     transform: translateY(-50%); /* Perfect vertical centering */
                 }
 
@@ -97,8 +97,8 @@
                 align-items: center; /* Centers the content horizontally */
                 justify-content: center; /* Centers the content vertically */
                 position: absolute; /* Maintains its position relative to the header */
-                right: 180px; /* Keeps the button positioned correctly */
-                width: 50px; /* Adjusts the container width to fit image and text */
+                right: 230px; /* Keeps the button positioned correctly */
+                width: 80px; /* Adjusts the container width to fit image and text */
                 height: auto; /* Ensures the height adjusts based on content */
                 background-color: transparent; /* Removes any background color */
                 border: none; /* Removes any border */
@@ -119,11 +119,67 @@
                     margin-bottom: 5px; /* Adds spacing between the image and the text */
                 }
 
-                /*.header .sign-in-btn p {
-                    margin: 0;*/ /* Removes default paragraph margins */
-                    /*font-size: 30px;*/ /* Adjusts the text size */
-                    /*color: #033249;*/ /* Sets the text color */
-                /*}*/
+
+        /* New Cart Icon Section */
+            /* The cart icon and related elements within the header */
+            .header .shortcut {
+                position: absolute; /* Absolute position within the header */
+                right: 150px; /* Adjust the distance from the right edge of the header */
+                top: 50%; /* Vertically center it within the header */
+                transform: translateY(-50%); /* Perfect vertical centering */
+                display: inline-block;
+                vertical-align: middle;
+            }
+
+                .header .shortcut .shortcut_heading1 {
+                    padding: 7px 0;
+                    position: relative;
+                    display: inline-block;
+                    color: #323232;
+                    height: 34px;
+                    width: 50px;
+                    border-radius: 100%;
+                    font-size: 16px;
+                    text-align: center;
+                }
+
+            .header .sprite.cart-icon {
+                width: 28px;
+                height: 28px;
+                background-image: url('https://www.isradon.com/catalog/view/theme/cosyone/image/cart.svg'); /* Full URL */
+                background-position: center;
+                background-size: contain;
+                background-repeat: no-repeat;
+                display: inline-block;
+                vertical-align: middle;
+                content: "";
+            }
+
+            .header .shortcut .shortcut_heading1 .count {
+                font-size: 11px;
+                background: #2150f5;
+                height: 20px;
+                width: 20px;
+                display: block;
+                position: absolute;
+                top: -2px;
+                left: 16px;
+                color: #fff;
+                line-height: 20px;
+                border-radius: 50%;
+                text-align: center;
+                font-weight: bold;
+            }
+
+            .header .menu_text.orange_cart {
+                font-size: 16px;
+                text-align: right;
+                position: absolute; /* Required for `right` to take effect */
+                right: 130px; /* Moves the text 150px from the right edge of its parent */
+                top: 50%; /* Vertically aligns it with the container */
+                transform: translateY(-50%); /* Centers it perfectly vertically */
+            }
+
 
         body {
             margin: 0;
@@ -148,6 +204,16 @@
         <!-- Sign In Button -->
         <button class="sign-in-btn" onclick="location.href='/Accounts/SignIn'">Sign In</button>
 
+        <li class="text-right">
+            <div class="shortcut sandy">
+                <a class="shortcut_heading1" href="Dashboard/CartPage">
+                    <i class="sprite cart-icon"></i>
+                    <span class="count cart_count" id="cart_count">0</span>
+                </a>
+            </div>
+            <p class="menu_text orange_cart">Shopping Cart</p>
+        </li>
+
     </div>
 
     <div class="container">
@@ -155,3 +221,6 @@
     </div>
 </body>
 </html>
+
+
+
