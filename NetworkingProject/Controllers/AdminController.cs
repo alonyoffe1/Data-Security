@@ -6,16 +6,12 @@ using System.Web.Mvc;
 
 namespace NetworkingProject.Controllers
 {
-    public class DashboardController : Controller
+    public class AdminController : Controller
     {
-        // GET: Dashboard
+        // GET: Admin
         public ActionResult Index()
         {
             return View();
         }
-
-
     }
-
-
 }

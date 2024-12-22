@@ -24,7 +24,7 @@ namespace NetworkingProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["MyDbConnection"].ToString();
+                string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ToString();
 
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
@@ -33,26 +33,28 @@ namespace NetworkingProject.Controllers
                         connection.Open();
 
                         // Query to check if the email and password match
-                        string query = "SELECT COUNT(1) FROM Users WHERE Email = @Email AND Password = @Password";
-
+                        string query = "SELECT Role FROM Users WHERE Email = @Email AND Password = @Password";
                         using (SqlCommand cmd = new SqlCommand(query, connection))
                         {
                             cmd.Parameters.AddWithValue("@Email", model.Email);
-                            cmd.Parameters.AddWithValue("@Password", model.Password); // Ensure password is securely hashed and compared
+                            cmd.Parameters.AddWithValue("@Password", model.Password);
 
-                            int count = (int)cmd.ExecuteScalar();
-
-                            if (count == 1)
+                            string role = (string)cmd.ExecuteScalar(); //retrieve the role as a string from the db
+                            Session["UserRole"] = role;
+                            if (role == "Admin")
                             {
-                                // Successful login, redirect to home page
-                                return RedirectToAction("Index", "Dashboard");
+                                return RedirectToAction("Index", "HomePage");
+                            }
+                            else if (role == "User")
+                            {
+                                return RedirectToAction("Index", "HomePage");
                             }
                             else
                             {
-                                // Invalid login attempt
-                                ModelState.AddModelError("", "Invalid email or password.");
+                                ModelState.AddModelError("", "Invalid role.");
                             }
                         }
+                        
                     }
                     catch (Exception ex)
                     {
@@ -64,6 +66,12 @@ namespace NetworkingProject.Controllers
 
             // If validation fails or login is unsuccessful, return the same view with errors
             return View(model);
+        }
+
+        public ActionResult SignOut()
+        {
+            Session["UserRole"] = null; // Clears the role key stored in the session by the sign in method
+            return RedirectToAction("Index", "HomePage");
         }
 
 
@@ -79,15 +87,16 @@ namespace NetworkingProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["MyDbConnection"].ToString();
+                string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     try
                     {
                         connection.Open();
 
-                        string query = "INSERT INTO Users (Email, Password, FirstName, LastName, PhoneNumber, DateOfBirth) " +
-                                       "VALUES (@Email, @Password, @FirstName, @LastName, @PhoneNumber, @DateOfBirth)";
+
+                        string query = "INSERT INTO Users (Email, Password, FirstName, LastName, PhoneNumber, DateOfBirth, Role) " +
+                                       "VALUES (@Email, @Password, @FirstName, @LastName, @PhoneNumber, @DateOfBirth, @Role)";
 
                         using (SqlCommand cmd = new SqlCommand(query, connection))
                         {
@@ -98,6 +107,7 @@ namespace NetworkingProject.Controllers
                             cmd.Parameters.AddWithValue("@LastName", model.LastName);
                             cmd.Parameters.AddWithValue("@PhoneNumber", model.PhoneNumber);
                             cmd.Parameters.AddWithValue("@DateOfBirth", model.DateOfBirth);
+                            cmd.Parameters.AddWithValue("@Role", "User"); // Default role as "User"
 
                             cmd.ExecuteNonQuery();
                         }

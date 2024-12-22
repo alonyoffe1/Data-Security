@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width" />
     <title>@ViewData["Title"]</title>
 
+    <!-- Add custom catalog CSS file -->
+    <link href="~/css/Catalog_assests/catalog.css" rel="stylesheet" />
+
+    <!-- Add Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+
 
     <style>
         /* Your shared styles for header and layout */
@@ -49,8 +55,8 @@
             .header .search-container {
                 flex-grow: 1; /* Allows the search container to take up available space */
                 display: flex;
-                justify-content: center; /* Centers the search bar and button horizontally */
-                position: relative; /* Ensures flexbox alignment */
+                justify-content: center; /* Centers the search bar horizontally */
+                position: relative; /* Ensures the button is positioned within this container */
                 width: 80%; /* Adjust this percentage to control the width of the entire container */
             }
 
@@ -85,7 +91,7 @@
                     transform: translateY(-50%); /* Perfect vertical centering */
                 }
 
-                    /* Hover effect */
+                    /* Hover effect for the button */
                     .header .search-container button:hover {
                         background-color: #f1f1f1;
                     }
@@ -119,13 +125,10 @@
                     margin-bottom: 5px; /* Adds spacing between the image and the text */
                 }
 
-
-        /* New Cart Icon Section */
-            /* The cart icon and related elements within the header */
             .header .shortcut {
                 position: absolute; /* Absolute position within the header */
-                right: 150px; /* Adjust the distance from the right edge of the header */
-                top: 50%; /* Vertically center it within the header */
+                right: 160px; /* Adjust the distance from the right edge of the header */
+                top: 40%; /* Vertically center it within the header */
                 transform: translateY(-50%); /* Perfect vertical centering */
                 display: inline-block;
                 vertical-align: middle;
@@ -176,7 +179,7 @@
                 text-align: right;
                 position: absolute; /* Required for `right` to take effect */
                 right: 130px; /* Moves the text 150px from the right edge of its parent */
-                top: 50%; /* Vertically aligns it with the container */
+                top: 75%; /* Vertically aligns it with the container */
                 transform: translateY(-50%); /* Centers it perfectly vertically */
             }
 
@@ -201,12 +204,21 @@
             </form>
         </div>
 
-        <!-- Sign In Button -->
-        <button class="sign-in-btn" onclick="location.href='/Accounts/SignIn'">Sign In</button>
+        <!-- sign in button present when no user is logged in, after login process is complete the button is replaced by sign out button -->
+        @if (Session["UserRole"] != null)
+        {
+            <!-- Display Sign Out button if UserRole is set -->
+            <button class="sign-in-btn" onclick="location.href='/Accounts/SignOut'">Sign Out</button>
+        }
+        else
+        {
+            <!-- Display Sign In button if UserRole is null -->
+            <button class="sign-in-btn" onclick="location.href='/Accounts/SignIn'">Sign In</button>
+        }
 
         <li class="text-right">
             <div class="shortcut sandy">
-                <a class="shortcut_heading1" href="Dashboard/CartPage">
+                <a class="shortcut_heading1" href="/ShoppingCart/CartPage">
                     <i class="sprite cart-icon"></i>
                     <span class="count cart_count" id="cart_count">0</span>
                 </a>

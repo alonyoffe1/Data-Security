@@ -155,9 +155,11 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AccountsController.cs" />
+    <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\BookController.cs" />
     <Compile Include="Controllers\DashboardController.cs" />
     <Compile Include="Controllers\HomePageController.cs" />
+    <Compile Include="Controllers\ShoppingCartController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -240,12 +242,14 @@
     <Content Include="Views\Dashboard\Index.cshtml" />
     <Content Include="Views\Accounts\Register.cshtml" />
     <Content Include="Views\Book\Catalog.cshtml" />
-    <Content Include="Views\Dashboard\CartPage.cshtml" />
+    <Content Include="Views\ShoppingCart\CartPage.cshtml" />
+    <Content Include="Views\ShoppingCart\CartPageWithCart.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
     <Folder Include="images\" />
     <Folder Include="js\" />
+    <Folder Include="Views\Admin\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap.rtl.min.css.map" />

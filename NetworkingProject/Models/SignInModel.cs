@@ -17,5 +17,6 @@ namespace NetworkingProject.Models
         [DataType(DataType.Password)]
 
         public string Password { get; set; }
+        public String Role { get; set; }
     }
 }

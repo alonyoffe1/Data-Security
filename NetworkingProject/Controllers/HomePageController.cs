@@ -11,7 +11,13 @@ namespace AudioBookStore.Controllers
         // Action for the main page
         public ActionResult Index()
         {
-            return View(); // Looks for Views/HomePage/Index.cshtml
+            // Redirect to the Catalog action in the Books controller
+            return RedirectToAction("Index", "Book");
+        }
+
+        public ActionResult RedirectToBooks()
+        {
+            return RedirectToAction("Index", "Catalog");  // Redirects to the Books controller Index action
         }
 
         // Action for the search results page
