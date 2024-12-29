@@ -43,6 +43,35 @@
                     background-color: #0056b3;
                 }
 
+            .header .delete-user-btn {
+                display: flex; /* Enables vertical stacking of image and text */
+                flex-direction: column; /* Stacks image and text vertically */
+                align-items: center; /* Centers the content horizontally */
+                justify-content: center; /* Centers the content vertically */
+                position: absolute; /* Maintains its position relative to the header */
+                right: 1130px; /* Keeps the button positioned correctly */
+                width: 80px; /* Adjusts the container width to fit image and text */
+                height: auto; /* Ensures the height adjusts based on content */
+                white-space: nowrap;
+                background-color: transparent; /* Removes any background color */
+                border: none; /* Removes any border */
+                box-shadow: none; /* Removes shadow effects */
+                text-align: center; /* Centers the text below the image */
+                cursor: pointer; /* Keeps the button functionality */
+            }
+
+                .header .delete-user-btn::before {
+                    content: ""; /* Adds the icon as a pseudo-element */
+                    display: block; /* Ensures it behaves like a block element */
+                    height: 28px; /* Sets the image height */
+                    width: 28px; /* Sets the image width */
+                    background-image: url(https://www.isradon.com/catalog/view/theme/cosyone/image/maleCircle4.svg);
+                    background-position: center;
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    margin-bottom: 5px; /* Adds spacing between the image and the text */
+                }
+
             /* Centering the search bar and button */
             .header .search-container {
                 flex-grow: 1; /* Allows the search container to take up available space */
@@ -194,7 +223,37 @@
 <body>
     <div class="header">
         <!-- Main Page button -->
-        <button class="main-page-btn" onclick="location.href='/HomePage/Index'">Main Page</button>
+        <div class="button-group">
+            <button class="main-page-btn" onclick="location.href='/HomePage/Index'">Main Page</button>
+
+            @if (Session["UserRole"]?.ToString() == "Admin")
+            {
+                <!-- Add New Book button -->
+                <button class="main-page-btn" onclick="openAddBookModal()">Add New Book</button>
+            }
+
+            <div id="messages">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success" role="alert">
+                        @TempData["SuccessMessage"]
+                    </div>
+                }
+                else if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @TempData["ErrorMessage"]
+                    </div>
+                }
+            </div>
+
+        </div>
+
+        @if (Session["UserRole"]?.ToString() == "Admin")
+        {
+            <!-- Manage Users button -->
+            <button type="button" class="delete-user-btn" onclick="openManageUserModal()">Manage Users</button>
+        }
 
         <!-- Search form -->
         <div class="search-container">
@@ -231,6 +290,318 @@
     <div class="container">
         @RenderBody() <!-- This is where the content from the individual views will be inserted -->
     </div>
+
+    <div class="modal fade" id="addBookModal" tabindex="-1" aria-labelledby="addBookLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addBookLabel">Add New Book</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addBookForm">
+                        <!-- Book Title -->
+                        <div class="mb-3">
+                            <label for="bookTitle" class="form-label">Book Title</label>
+                            <input type="text" class="form-control" id="bookTitle" placeholder="Enter book title" required>
+                        </div>
+
+                        <!-- Author -->
+                        <div class="mb-3">
+                            <label for="author" class="form-label">Author</label>
+                            <input type="text" class="form-control" id="author" placeholder="Enter author name" required>
+                        </div>
+
+                        <!-- Publisher -->
+                        <div class="mb-3">
+                            <label for="publisher" class="form-label">Publisher</label>
+                            <input type="text" class="form-control" id="publisher" placeholder="Enter publisher name" required>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="mb-3">
+                            <label for="price" class="form-label">Price</label>
+                            <input type="number" class="form-control" id="price" placeholder="Enter book price" min="0" step="0.01" required>
+                        </div>
+
+                        <!-- Publishing Year -->
+                        <div class="mb-3">
+                            <label for="year" class="form-label">Publishing Year</label>
+                            <input type="number" class="form-control" id="year" placeholder="Enter publishing year" min="1000" max="9999" required>
+                        </div>
+
+                        <!-- Genre -->
+                        <div class="mb-3">
+                            <label for="genre" class="form-label">Genre</label>
+                            <input type="text" class="form-control" id="genre" placeholder="Enter genre" required>
+                        </div>
+
+                        <!-- Age Limit -->
+                        <div class="mb-3">
+                            <label for="age" class="form-label">Age Limit</label>
+                            <input type="number" class="form-control" id="age" name="age" placeholder="Enter age limit" min="0" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveBookDetails()">Save Book</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Function to open the Add Book modal
+        function openAddBookModal() {
+            // Reset form and hide any previous error messages
+            document.getElementById('addBookForm').reset();
+            // Show the modal
+            var myModal = new bootstrap.Modal(document.getElementById('addBookModal'));
+            myModal.show();
+        }
+
+        // Function to validate and save the book details
+        function saveBookDetails() {
+            const form = document.getElementById("addBookForm");
+
+            // Get form values
+            const title = form.bookTitle.value.trim();
+            const author = form.author.value.trim();
+            const publisher = form.publisher.value.trim();
+            const price = parseFloat(form.price.value);
+            const year = parseInt(form.year.value);
+            const genre = form.genre.value.trim();
+            const age = parseInt(form.age.value);
+
+            // Validate input fields
+            if (!title || !author || !publisher || isNaN(price) || price <= 0 || isNaN(year) || !genre || isNaN(age)) {
+                alert("Please fill in all fields correctly.");
+                return; // Prevent further execution if validation fails
+            }
+
+            // Prepare the URL with query parameters to send to the server
+            var url = '/Admin/AddBook?title=' + encodeURIComponent(title) +
+                '&author=' + encodeURIComponent(author) +
+                '&publisher=' + encodeURIComponent(publisher) +
+                '&price=' + encodeURIComponent(price) +
+                '&year=' + encodeURIComponent(year) +
+                '&genre=' + encodeURIComponent(genre) +
+                '&age=' + encodeURIComponent(age)
+
+            // Redirect the user to the URL with the form data
+            window.location.href = url;
+        }
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => alert.style.display = 'none');
+        }, 5000);
+    </script>
+    <!--Modal + Script logic for Manage User functionality -->
+    <!-- Manage User Modal (First Modal) -->
+    <div class="modal fade" id="manageUserModal" tabindex="-1" aria-labelledby="manageUserLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manageUserLabel">Manage User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- User Email Input -->
+                    <div class="mb-3">
+                        <label for="userEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="userEmail" placeholder="Enter user email" required>
+                    </div>
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-primary" id="updateUserBtn" onclick="openUpdateUserModal()">Update</button>
+                        <button class="btn btn-warning" id="suspendUserBtn" onclick="suspendUser()">Suspend</button>
+                        <button class="btn btn-danger" id="deleteUserBtn" onclick="deleteUser()">Delete</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update User Modal (Second Modal) -->
+    <div class="modal fade" id="updateUserModal" tabindex="-1" aria-labelledby="updateUserLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateUserLabel">Update User Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="updateUserForm">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" class="form-control" readonly />
+                        </div>
+                        <!-- First Name -->
+                        <div class="mb-3">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="firstName" placeholder="Enter first name">
+                        </div>
+
+                        <!-- Last Name -->
+                        <div class="mb-3">
+                            <label for="lastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="lastName" placeholder="Enter last name">
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="mb-3">
+                            <label for="phoneNumber" class="form-label">Phone Number</label>
+                            <input type="text" class="form-control" id="phoneNumber" placeholder="Enter phone number">
+                        </div>
+
+                        <!-- Date of Birth -->
+                        <div class="mb-3">
+                            <label for="dob" class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="dob">
+                        </div>
+
+                        <!-- Role -->
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role</label>
+                            <select class="form-control" id="role">
+                                <option value="User">User</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveNewDetails()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openManageUserModal() {
+            // Show the manage user modal
+            var myModal = new bootstrap.Modal(document.getElementById('manageUserModal'));
+            myModal.show();
+        }
+
+        // Function to check if email exists in the database
+        function checkEmailExistence(email) {
+            return new Promise((resolve, reject) => {
+                // Send request to the backend to check if email exists
+                var url = '/Accounts/CheckEmailExists?email=' + encodeURIComponent(email);
+
+                // Send request to the backend to check if the email exists
+                fetch(url, {
+                    method: 'GET',
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            resolve(true); // Email exists
+                        } else {
+                            resolve(false); // Email does not exist
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking email existence:', error);
+                        reject(false); // If error occurs, return false
+                    });
+            });
+        }
+        function openUpdateUserModal() {
+            const email = document.getElementById('userEmail').value.trim();
+
+            // Check if email exists before proceeding with the update
+            checkEmailExistence(email).then(emailExists => {
+                if (emailExists) {
+                    // If email exists, fetch user details and populate the update form
+                    fetchUserDetails(email);
+                    // Show the update modal
+                    var myModal = new bootstrap.Modal(document.getElementById('updateUserModal'));
+                    myModal.show();
+                } else {
+                    alert("The email does not exist. Please enter a valid email.");
+                }
+            }).catch(error => {
+                alert("An error occurred while checking the email.");
+            });
+        }
+        function fetchUserDetails(email) {
+            fetch(`/Accounts/GetUserDetails?email=${encodeURIComponent(email)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch user details");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('email').value = email; 
+                    document.getElementById('firstName').value = data.firstName || "";
+                    document.getElementById('lastName').value = data.lastName || "";
+                    document.getElementById('phoneNumber').value = data.phoneNumber || "";
+                    document.getElementById('dob').value = data.dob || "";
+                    document.getElementById('role').value = data.role || "";
+                })
+                .catch(error => {
+                    console.error('Error fetching user details:', error);
+                    alert("Failed to fetch user details. Please try again.");
+                });
+        }
+        function saveNewDetails() {
+            const form = document.getElementById('updateUserForm'); 
+            const email = form.email.value.trim();
+            const firstName = form.firstName.value.trim();
+            const lastName = form.lastName.value.trim();
+            const phoneNumber = form.phoneNumber.value.trim();
+            const dateOfBirth = form.dob.value;
+            const role = form.role.value;
+
+            if (!firstName || !lastName || !phoneNumber || !dateOfBirth) {
+                alert("Please fill in all the fields.");
+                return;
+            }
+
+            const params = new URLSearchParams({
+                email,
+                firstName,
+                lastName,
+                phoneNumber,
+                dateOfBirth,
+                role
+            });
+
+            fetch('/Accounts/UpdateUserDetails', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params.toString()
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to save user details");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert("User details updated successfully!");
+                        const updateModal = bootstrap.Modal.getInstance(document.getElementById('updateUserModal'));
+                        updateModal.hide();
+                    } else {
+                        alert(data.message || "Failed to update user details.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving user details:', error);
+                    alert("An error occurred while saving user details.");
+                });
+        }
+    </script>
 </body>
 </html>
 

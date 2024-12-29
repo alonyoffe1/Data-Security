@@ -1,0 +1,45 @@
+﻿
+@{
+    Layout = null;
+}
+
+@model dynamic
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Register</title>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/stylesheet.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/main.css">
+    <link id="css-link" rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/newtheme.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/slick.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/slick-theme.css">
+    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/bootstrap-datetimepicker.min.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+
+
+</head>
+<h2>Select Format</h2>
+<p>@ViewBag.Title by @ViewBag.Author</p>
+<form method="post" action="@Url.Action("AddToCart", "ShoppingCart")">
+    <input type="hidden" name="title" value="@ViewBag.Title" />
+    <input type="hidden" name="author" value="@ViewBag.Author" />
+    <label>
+        <input type="radio" name="format" value="epub" required /> ePub
+    </label>
+    <label>
+        <input type="radio" name="format" value="f2b" required /> F2B
+    </label>
+    <label>
+        <input type="radio" name="format" value="mobi" required /> Mobi
+    </label>
+    <label>
+        <input type="radio" name="format" value="pdf" required /> PDF
+    </label>
+    <button type="submit" class="btn btn-primary">Add to Cart</button>
+</form>

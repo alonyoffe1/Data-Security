@@ -14,6 +14,7 @@ namespace NetworkingProject.Models
         public string Author { get; set; }
         public string  Publisher { get; set; }
         public float Price { get; set; }
+        public float? DiscountPrice { get; set; }
         public int PublishingYear { get; set; }
         public string Genre { get; set; }
         public int AgeLim { get; set; }

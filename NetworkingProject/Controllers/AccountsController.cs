@@ -125,5 +125,154 @@ namespace NetworkingProject.Controllers
             // If validation fails, return the same view with error messages
             return View(model);
         }
+
+
+        [HttpGet]
+        public JsonResult CheckEmailExists(string email)
+        {
+            // Check if email exists in the database
+            bool emailExists = false;
+            string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                string query = "SELECT COUNT(*) FROM Users WHERE Email = @Email";
+                using (SqlCommand cmd = new SqlCommand(query, connection))
+                {
+                    cmd.Parameters.AddWithValue("@Email", email);
+                    connection.Open();
+                    int count = (int)cmd.ExecuteScalar();
+                    emailExists = count > 0; // If count > 0, email exists
+                }
+            }
+
+            // Return the result as JSON
+            return Json(new { exists = emailExists }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetUserDetails(string email)
+        {
+            // Initialize an object to hold user details
+            var userDetails = new
+            {
+                firstName = "",
+                lastName = "",
+                phoneNumber = "",
+                dob = "",
+                role = ""
+            };
+
+            // Database connection string
+            string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    // Query to fetch user details by email
+                    string query = @"
+                SELECT FirstName, LastName, PhoneNumber, DateOfBirth, Role
+                FROM Users
+                WHERE Email = @Email";
+
+                    using (SqlCommand cmd = new SqlCommand(query, connection))
+                    {
+                        // Add email parameter to prevent SQL injection
+                        cmd.Parameters.AddWithValue("@Email", email);
+
+                        // Open connection
+                        connection.Open();
+
+                        // Execute query and read data
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                // Map database fields to the userDetails object
+                                userDetails = new
+                                {
+                                    firstName = reader["FirstName"]?.ToString() ?? "",
+                                    lastName = reader["LastName"]?.ToString() ?? "",
+                                    phoneNumber = reader["PhoneNumber"]?.ToString() ?? "",
+                                    dob = reader["DateOfBirth"] != DBNull.Value
+                                    ? Convert.ToDateTime(reader["DateOfBirth"]).ToString("yyyy-MM-dd")
+                                    : "", // Format as "yyyy-MM-dd"
+                                    role = reader["Role"]?.ToString() ?? ""
+                                };
+                            }
+                        }
+                    }
+                }
+
+                // Return user details as JSON
+                return Json(userDetails, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (you might want to use a logging framework)
+                Console.WriteLine("Error fetching user details: " + ex.Message);
+
+                // Return an error message (optional: include a custom error field)
+                return Json(new { error = "An error occurred while fetching user details." }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+        [HttpPost]
+        public JsonResult UpdateUserDetails(
+                                                string email,   
+                                                string firstName,
+                                                string lastName,
+                                                string phoneNumber,
+                                                DateTime dateOfBirth,
+                                                string role)
+        {
+            try
+            {
+                string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    string query = @"
+                UPDATE Users
+                SET 
+                    FirstName = @FirstName,
+                    LastName = @LastName,
+                    PhoneNumber = @PhoneNumber,
+                    DateOfBirth = @DateOfBirth,
+                    Role = @Role
+                WHERE Email = @Email";
+
+                    using (SqlCommand cmd = new SqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@Email", email);
+                        cmd.Parameters.AddWithValue("@FirstName", firstName);
+                        cmd.Parameters.AddWithValue("@LastName", lastName);
+                        cmd.Parameters.AddWithValue("@PhoneNumber", phoneNumber);
+                        cmd.Parameters.AddWithValue("@DateOfBirth", dateOfBirth);
+                        cmd.Parameters.AddWithValue("@Role", role);
+
+                        connection.Open();
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            return Json(new { success = true });
+                        }
+                        else
+                        {
+                            return Json(new { success = false, message = "No rows were updated. Please check the email address." });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                Console.WriteLine("Error updating user details: " + ex.Message);
+                return Json(new { success = false, message = "An error occurred while updating user details." }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
     }
 }

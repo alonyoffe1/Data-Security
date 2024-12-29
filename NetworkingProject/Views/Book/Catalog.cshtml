@@ -5,7 +5,14 @@
 }
 
 
+<head>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 
+    <!-- Bootstrap Bundle with Popper.js for modal functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+</head>
 <div class="container my-5">
     <h1 class="text-center mb-4 fw-bold">Our Book Collection</h1>
     <!-- Bootstrap Grid -->
@@ -21,9 +28,42 @@
                     <div class="card-body text-center">
                         <h6 class="text-danger fw-bold mb-1">@book.Author</h6>
                         <p class="card-title fw-bold mb-1">@book.Title</p>
-                        <div class="mb-2">
-                            <span class="fs-5 fw-bold text-primary">@book.Price.ToString("0.00")$</span>
-                        </div>
+
+                        @if (ViewBag.IsAdmin)
+                        {
+                            <!-- Button to open the modal for editing price details -->
+                            <button class="btn btn-warning fs-5 fw-bold"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#priceEditModal"
+                                    onclick="openPriceEditModal('@book.Title', @book.Price)">
+                                @if (book.DiscountPrice.HasValue)
+                                {
+                                    <!-- Display the original price as strikethrough and the discounted price next to it -->
+                                    <span class="text-decoration-line-through text-danger">@book.Price.ToString("0.00")$</span>
+                                    <span class="ms-2 text-success">@book.DiscountPrice.Value.ToString("0.00")$</span>
+                                }
+                                else
+                                {
+                                    <!-- Display only the original price -->
+                                    <span class="fs-5 fw-bold text-primary">@book.Price.ToString("0.00")$</span>
+                                }
+                            </button>
+                        }
+                        else
+                        {
+                            <!-- Normal price display for users who are not admins -->
+                            if (book.DiscountPrice.HasValue && book.DiscountPrice.Value != book.Price)
+                            {
+                                <!-- Display the original price as strikethrough and the discounted price next to it -->
+                                <span class="text-decoration-line-through text-danger">@book.Price.ToString("0.00")$</span>
+                                <span class="ms-2 text-success">@book.DiscountPrice.Value.ToString("0.00")$</span>
+                            }
+                            else
+                            {
+                                <!-- Display only the original price -->
+                                <span class="fs-5 fw-bold text-primary">@book.Price.ToString("0.00")$</span>
+                            }
+                        }
                         <div class="d-flex flex-column gap-2">
                             @if (ViewBag.IsAdmin)
                             {
@@ -33,9 +73,11 @@
                                     Delete Book →
                                 </a>
                             }
-                            <a href="@Url.Action("AddToCart", "ShoppingCart",
-                                new { title = book.Title, author = book.Author})"
-                               class="btn btn-primary btn-sm px-4 fw-bold">
+                            <a href="#"
+                               class="btn btn-primary btn-sm px-4 fw-bold"
+                               data-bs-toggle="modal"
+                               data-bs-target="#formatSelectionModal"
+                               onclick="openFormatModal('@book.Title', '@book.Author')">
                                 Buy Now →
                             </a>
                         </div>
@@ -45,3 +87,178 @@
         }
     </div>
 </div>
+
+<!-- Modal HTMLs -->
+<!-- Modal for price change made by admins -->
+<div class="modal fade" id="priceEditModal" tabindex="-1" aria-labelledby="priceEditLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="priceEditLabel">Manage Discount for Books</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <!-- Hidden field for book title -->
+                    <input type="hidden" id="modalBookTitle">
+
+                    <!-- Current Price Display -->
+                    <div class="mb-3">
+                        <label for="currentPrice" class="form-label">Current Price:</label>
+                        <input type="text" class="form-control" id="currentPrice" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="discountPrice" class="form-label">Discount Price</label>
+                        <input type="number" class="form-control" id="discountPrice" placeholder="Enter discounted price" min="0" step="0.01">
+                    </div>
+
+                    <!-- Discount End Date -->
+                    <div class="mb-3" id="discountFields">
+                        <label for="discountPeriod" class="form-label">Discount End Date:</label>
+                        <input type="date" class="form-control" id="discountPeriod" max="">
+                        <small class="form-text text-muted">Discount lasts for a maximum of 7 days.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveDiscountChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Function to open the modal and set the current price
+    function openPriceEditModal(title, price) {
+        // Set the title and price to the modal inputs
+        document.getElementById('modalBookTitle').value = title;
+        document.getElementById('currentPrice').value = price.toFixed(2); // Display current price
+        document.getElementById('discountPrice').value = ''; // Reset the discount field
+        document.getElementById('discountPeriod').value = ''; // Reset the discount end date field
+
+        // Show the modal
+        var myModal = new bootstrap.Modal(document.getElementById('priceEditModal'));
+        myModal.show();
+    }
+
+    // Function to validate and save the discount price
+    function saveDiscountChanges() {
+        var discountPrice = parseFloat(document.getElementById('discountPrice').value);
+        var currentPrice = parseFloat(document.getElementById('currentPrice').value);
+        var discountPeriod = document.getElementById('discountPeriod').value;
+        var bookTitle = document.getElementById('modalBookTitle').value;
+
+        if (discountPrice < 0 && discountPrice !== -1000) {
+            alert("Discount price cannot be negative");
+            return; // Prevent further execution if discountPrice is negative and not -1000
+        }
+        if (discountPrice > currentPrice) {
+            alert("The discount price cannot be higher than the current price.");
+            return; // Prevent further execution if the discount price is invalid
+        }
+        // Validate the discount price and period
+        else if ((discountPrice && discountPrice <= currentPrice) || discountPrice == -1000) {
+
+            // Prepare the URL with query parameters
+            var url = '/Admin/SetDiscount?title=' + encodeURIComponent(bookTitle) +
+                '&discountPrice=' + encodeURIComponent(discountPrice) +
+                '&discountPeriod=' + encodeURIComponent(discountPeriod);
+
+            // Redirect the user to the URL
+            window.location.href = url;
+        }
+        else {
+            alert("Invalid discount price.");
+        }
+    }
+
+    // Function to toggle the visibility of the discount end date field based on discount price input
+    function toggleDiscountFields() {
+        var discountPrice = document.getElementById('discountPrice').value;
+        var discountFields = document.getElementById('discountFields');
+
+        if (discountPrice && discountPrice < parseFloat(document.getElementById('currentPrice').value)) {
+            discountFields.style.display = 'block'; // Show discount end date field if a valid discount price is entered
+        } else {
+            discountFields.style.display = 'none'; // Hide discount end date field if discount price is not valid
+        }
+    }
+
+</script>
+<!-- Modal to choose formats when buying books -->
+<div class="modal fade" id="formatSelectionModal" tabindex="-1" aria-labelledby="formatSelectionLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="formatSelectionLabel">Select Format</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <input type="hidden" id="modalBookTitle">
+                    <input type="hidden" id="modalBookAuthor">
+                    <label for="format">Choose a format:</label>
+                    <select class="form-control" id="format" required>
+                        <option value="ePub">ePub</option>
+                        <option value="f2b">f2b</option>
+                        <option value="mobi">MOBI</option>
+                        <option value="PDF">PDF</option>
+                    </select>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitFormat()">Add to Cart</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript logic for format option -->
+<script>
+    function openFormatModal(title, author) {
+        //This function is called to open the modal and set the hidden inputs (modalBookTitle and modalBookAuthor)
+        //with values for the book title and author.It then displays the modal.
+
+
+        // Set the title and author to the hidden input fields
+        document.getElementById('modalBookTitle').value = title;
+        document.getElementById('modalBookAuthor').value = author;
+
+        // Open the modal
+        var myModal = new bootstrap.Modal(document.getElementById('formatSelectionModal'), {
+            keyboard: true
+        });
+        myModal.show();
+
+        // Add an event listener to remove the backdrop when the modal is hidden
+        var modalElement = document.getElementById('formatSelectionModal');
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            document.body.classList.remove('modal-open');  // Remove the 'modal-open' class
+            document.querySelector('.modal-backdrop').remove();  // Remove the backdrop element
+        });
+    }
+
+    function submitFormat() {
+        //This function is called when the user clicks "Add to Cart".It collects the values from the hidden inputs and the selected format,
+        //logs them to the console, hides the modal,
+        //and optionally redirects to another page.
+        var title = document.getElementById('modalBookTitle').value;
+        var author = document.getElementById('modalBookAuthor').value;
+        var format = document.getElementById('format').value;
+
+        // Log the values for now
+        console.log('Title: ' + title);
+        console.log('Author: ' + author);
+        console.log('Format: ' + format);
+
+        // Close the modal after submitting
+        var myModal = bootstrap.Modal.getInstance(document.getElementById('formatSelectionModal'));
+        myModal.hide();
+
+        // Redirect to the "AddToCart" action (optional)
+        window.location.href = '/ShoppingCart/AddToCart?title=' + title + '&author=' + author + '&format=' + format;
+    }
+
+</script>

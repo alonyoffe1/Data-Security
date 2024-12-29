@@ -24,9 +24,14 @@ namespace NetworkingProject.Controllers
             return View();
         }
 
+        public ActionResult SelectFormat(string title, string author)
+        {
+            ViewBag.Title = title;
+            ViewBag.Author = author;
+            return View();
+        }
         public ActionResult AddToCart(string title, string author)
         {
-            Console.WriteLine("Accessing bookrfepository");
             // Query the database to ensure the book exists and has consistent data
             BookModel book = _bookRepository.GetBookByDetails(title, author);
             

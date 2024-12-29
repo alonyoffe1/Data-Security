@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Data.SqlClient;
 using System.Configuration;
+using System.Web.Mvc;
 
 namespace NetworkingProject.Models
 {
@@ -38,6 +39,9 @@ namespace NetworkingProject.Models
                             Author = reader["Author"].ToString(),
                             Publisher = reader["Publisher"].ToString(),
                             Price = Convert.ToSingle(reader["Price"]),
+                            DiscountPrice = reader["DiscountPrice"] != DBNull.Value
+                                    ? Convert.ToSingle(reader["DiscountPrice"])
+                                    : (float?)null, // Safely handle nullable DiscountPrice
                             PublishingYear = Convert.ToInt32(reader["PublishingYear"]),
                             Genre = reader["Genre"].ToString(),
                             AgeLim = Convert.ToInt32(reader["AgeLim"])
@@ -56,7 +60,6 @@ namespace NetworkingProject.Models
         public BookModel GetBookByDetails(string title, string author)
         {
             BookModel book = null;
-            Console.WriteLine($"New book object created. GetBookByDetails - Title: {title}, Author: {author}");
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 string query = "SELECT * FROM NetProj_Web_db.dbo.Books WHERE Title = @Title AND Author = @Author";
@@ -78,6 +81,9 @@ namespace NetworkingProject.Models
                             Author = reader["Author"].ToString(),
                             Publisher = reader["Publisher"].ToString(),
                             Price = Convert.ToSingle(reader["Price"]),
+                            DiscountPrice = reader["DiscountPrice"] != DBNull.Value
+                                    ? Convert.ToSingle(reader["DiscountPrice"])
+                                    : (float?)null, // Safely handle nullable DiscountPrice
                             PublishingYear = Convert.ToInt32(reader["PublishingYear"]),
                             Genre = reader["Genre"].ToString(),
                             AgeLim = Convert.ToInt32(reader["AgeLim"])
@@ -96,6 +102,139 @@ namespace NetworkingProject.Models
             }
 
             return book;
+        }
+
+        public bool SetDiscountByTitle(string title, decimal discountPrice, string discountPeriod)
+        {
+            DateTime? discountEndDate = null;
+
+            // If discountPeriod is provided, convert it to a DateTime
+            if (!string.IsNullOrEmpty(discountPeriod))
+            {
+                DateTime parsedDate;
+                if (DateTime.TryParse(discountPeriod, out parsedDate))
+                {
+                    discountEndDate = parsedDate;
+                }
+                else
+                {
+                    return false; // Invalid discount period format
+                }
+            }
+
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                string query = @"
+            UPDATE NetProj_Web_db.dbo.Books
+            SET DiscountPrice = @DiscountPrice, Expiration = @DiscountEndDate
+            WHERE Title = @Title";
+
+                SqlCommand command = new SqlCommand(query, connection);
+                // If discountPrice is -1000, set it and the Expiration  date to DBNull.Value
+                if (discountPrice == -1000)
+                {
+                    command.Parameters.AddWithValue("@DiscountPrice", DBNull.Value);  // Use DBNull.Value for null
+                    command.Parameters.AddWithValue("@DiscountEndDate", DBNull.Value);
+                }
+                else
+                {
+                    command.Parameters.AddWithValue("@DiscountPrice", discountPrice);
+                    command.Parameters.AddWithValue("@DiscountEndDate", discountEndDate.HasValue ? (object)discountEndDate.Value : DBNull.Value);
+                }
+                command.Parameters.AddWithValue("@Title", title);
+
+                try
+                {
+                    connection.Open();
+                    int rowsAffected = command.ExecuteNonQuery();
+                    return rowsAffected > 0; // Return true if at least one row was updated
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error updating discount: {ex.Message}");
+                    return false;
+                }
+            }
+        }
+
+        public enum AddBookResult
+        {
+            Success,
+            AlreadyExists,
+            Failure
+        }
+        public AddBookResult AddNewBook(string title, string author, string publisher, decimal price, int year, string genre, int age)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                string checkQuery = "SELECT COUNT(*) FROM Books WHERE Title = @Title AND Author = @Author";
+                string insertQuery = @"INSERT INTO Books (Title, Author, Publisher, Price, PublishingYear, Genre, AgeLim, BorrowCopies)
+                               VALUES (@Title, @Author, @Publisher, @Price, @Year, @Genre, @Age, 3)";
+
+                try
+                {
+                    connection.Open();
+
+                    // Check if the book already exists
+                    using (SqlCommand checkCommand = new SqlCommand(checkQuery, connection))
+                    {
+                        checkCommand.Parameters.AddWithValue("@Title", title);
+                        checkCommand.Parameters.AddWithValue("@Author", author);
+
+                        int count = (int)checkCommand.ExecuteScalar();
+                        if (count > 0)
+                        {
+                            return AddBookResult.AlreadyExists;
+                        }
+                    }
+
+                    // Add the new book
+                    using (SqlCommand insertCommand = new SqlCommand(insertQuery, connection))
+                    {
+                        insertCommand.Parameters.AddWithValue("@Title", title);
+                        insertCommand.Parameters.AddWithValue("@Author", author);
+                        insertCommand.Parameters.AddWithValue("@Publisher", publisher);
+                        insertCommand.Parameters.AddWithValue("@Price", price);
+                        insertCommand.Parameters.AddWithValue("@Year", year);
+                        insertCommand.Parameters.AddWithValue("@Genre", genre);
+                        insertCommand.Parameters.AddWithValue("@Age", age);
+
+                        int rowsAffected = insertCommand.ExecuteNonQuery();
+                        if (rowsAffected > 0)
+                        {
+                            return AddBookResult.Success;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+            }
+
+            return AddBookResult.Failure;
+        }
+
+        public bool DeleteBookByTitle(string title)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                string query = "DELETE FROM NetProj_Web_db.dbo.Books WHERE Title = @Title";
+                SqlCommand command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@Title", title);
+
+                try
+                {
+                    connection.Open();
+                    int rowsAffected = command.ExecuteNonQuery();
+                    return rowsAffected > 0; // Return true if at least one row was deleted
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error deleting book: {ex.Message}");
+                    return false;
+                }
+            }
         }
     }
 }
