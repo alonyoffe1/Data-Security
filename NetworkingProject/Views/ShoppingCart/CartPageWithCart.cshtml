@@ -11,31 +11,51 @@
 </head>
 <body>
     <div class="container my-5">
-        <h1 class="text-center mb-4">Your Shopping Cart</h1>
+        <h1 class="text-center mb-4 fw-bold">Your Shopping Cart</h1>
 
-        @foreach (var book in Model)
+        @if (Model == null)
         {
-            <div class="col-md-2 d-flex justify-content-center">
-                <div class="card border-0 shadow-sm" style="width: 200px;">
-                    <!-- Placeholder for Book Image -->
-                    <img src="https://via.placeholder.com/150x200" class="card-img-top" alt="@book.Title" />
+            <p class="text-center text-muted fs-4">Your cart is empty. Start adding some books!</p>
+        }
+        else
+        {
+            <div class="container my-5">
+                @foreach (var book in Model)
+                {
+                    <div class="col-md-2 d-flex justify-content-center">
+                        <div class="card border-0 shadow-sm" style="width: 200px;">
+                            <!-- Placeholder for Book Image -->
+                            <img src="https://via.placeholder.com/150x200" class="card-img-top" alt="@book.Title" />
 
-                    <!-- Card Body -->
-                    <div class="card-body text-center">
-                        <h6 class="text-danger fw-bold mb-1">@book.Author</h6>
-                        <p class="card-title fw-bold mb-1">@book.Title</p>
-                        <div class="mb-2">
-                            <span class="fs-5 fw-bold text-primary">@book.Price.ToString("0.00")$</span>
+                            <div class="card-body text-center">
+                                <h6 class="text-danger fw-bold mb-1">@book.Author</h6>
+                                <p class="card-title fw-bold mb-1">@book.Title</p>
+                                <p class="card-text text-muted mb-2">Format: @book.SelectedFormat</p>
+                                <div class="mb-2">
+                                    <span class="fs-5 fw-bold text-primary">
+                                        @if (book.SelectedAction == "Buy")
+                                        {
+                                            @($"{book.Price:0.00}$")
+                                        }
+                                        else if (book.SelectedAction == "Borrow")
+                                        {
+                                            @($"{book.BorrowPrice:0.00}$")
+                                        }
+                                    </span>
+                                </div>
+                                <a href="@Url.Action("RemoveFromCart", "ShoppingCart", new { title = book.Title })"
+                                   class="btn btn-danger btn-sm fw-bold">
+                                    Remove
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
+                }
             </div>
         }
-    </div>
-
-    <!-- Include Bootstrap JS for any interactions if needed -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <!-- Include Bootstrap JS for any interactions if needed -->
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 </body>
 </html>

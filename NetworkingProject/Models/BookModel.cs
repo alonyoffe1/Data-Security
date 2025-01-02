@@ -15,8 +15,11 @@ namespace NetworkingProject.Models
         public string  Publisher { get; set; }
         public float Price { get; set; }
         public float? DiscountPrice { get; set; }
+        public float BorrowPrice { get; set; }
         public int PublishingYear { get; set; }
         public string Genre { get; set; }
         public int AgeLim { get; set; }
+        public string SelectedFormat { get; set; }
+        public string SelectedAction { get; set; } //property to hold the action (Buy or Borrow)
     }
 }

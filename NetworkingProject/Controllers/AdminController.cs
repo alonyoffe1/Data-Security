@@ -56,14 +56,14 @@ namespace NetworkingProject.Controllers
                 // Call the repository or database logic to set the discount for the book
                 bool isDiscountSet = _bookRepository.SetDiscountByTitle(title, discountPrice, discountPeriod);
 
-                if (isDiscountSet)
-                {
-                    TempData["SuccessMessage"] = "Discount applied successfully.";
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = "Failed to apply the discount. Please try again.";
-                }
+                //if (isDiscountSet)
+                //{
+                //    TempData["SuccessMessage"] = "Discount applied successfully.";
+                //}
+                //else
+                //{
+                //    TempData["ErrorMessage"] = "Failed to apply the discount. Please try again.";
+                //}
             }
             catch (Exception ex)
             {

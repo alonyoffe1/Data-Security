@@ -37,5 +37,6 @@ namespace NetworkingProject.Models
         [Display(Name = "Date of Birth")]
         public DateTime DateOfBirth { get; set; }
         public string Role { get; set; }
+        public int BorrowedBooks { get; set; }
     }
 }

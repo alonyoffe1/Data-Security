@@ -77,8 +77,13 @@
                                class="btn btn-primary btn-sm px-4 fw-bold"
                                data-bs-toggle="modal"
                                data-bs-target="#formatSelectionModal"
-                               onclick="openFormatModal('@book.Title', '@book.Author')">
+                               onclick="openFormatModal('@book.Title', '@book.Author', 'Buy')">
                                 Buy Now →
+                            </a>
+                            <a href="#"
+                               class="btn btn-secondary btn-sm px-4 fw-bold"
+                               onclick="openFormatModal('@book.Title', '@book.Author', 'Borrow')">
+                                Borrow for @book.BorrowPrice
                             </a>
                         </div>
                     </div>
@@ -198,6 +203,7 @@
                 <form>
                     <input type="hidden" id="modalBookTitle">
                     <input type="hidden" id="modalBookAuthor">
+                    <input type="hidden" id="modalAction">
                     <label for="format">Choose a format:</label>
                     <select class="form-control" id="format" required>
                         <option value="ePub">ePub</option>
@@ -217,15 +223,12 @@
 
 <!-- JavaScript logic for format option -->
 <script>
-    function openFormatModal(title, author) {
-        //This function is called to open the modal and set the hidden inputs (modalBookTitle and modalBookAuthor)
-        //with values for the book title and author.It then displays the modal.
-
-
-        // Set the title and author to the hidden input fields
+    function openFormatModal(title, author, typeofaction) {
+        // Set the title, author, and action in the hidden input fields
         document.getElementById('modalBookTitle').value = title;
         document.getElementById('modalBookAuthor').value = author;
-
+        document.getElementById('modalAction').value = typeofaction;
+        
         // Open the modal
         var myModal = new bootstrap.Modal(document.getElementById('formatSelectionModal'), {
             keyboard: true
@@ -236,29 +239,28 @@
         var modalElement = document.getElementById('formatSelectionModal');
         modalElement.addEventListener('hidden.bs.modal', function () {
             document.body.classList.remove('modal-open');  // Remove the 'modal-open' class
-            document.querySelector('.modal-backdrop').remove();  // Remove the backdrop element
+            var backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();  // Remove the backdrop element only if it exists
+            }
         });
     }
 
     function submitFormat() {
-        //This function is called when the user clicks "Add to Cart".It collects the values from the hidden inputs and the selected format,
-        //logs them to the console, hides the modal,
-        //and optionally redirects to another page.
         var title = document.getElementById('modalBookTitle').value;
         var author = document.getElementById('modalBookAuthor').value;
+        var typeofaction = document.getElementById('modalAction').value;
         var format = document.getElementById('format').value;
-
-        // Log the values for now
-        console.log('Title: ' + title);
-        console.log('Author: ' + author);
-        console.log('Format: ' + format);
 
         // Close the modal after submitting
         var myModal = bootstrap.Modal.getInstance(document.getElementById('formatSelectionModal'));
         myModal.hide();
 
-        // Redirect to the "AddToCart" action (optional)
-        window.location.href = '/ShoppingCart/AddToCart?title=' + title + '&author=' + author + '&format=' + format;
+
+        window.location.href = '/ShoppingCart/AddToCart?title=' + encodeURIComponent(title) +
+            '&author=' + encodeURIComponent(author) +
+            '&format=' + encodeURIComponent(format) +
+            '&typeofaction=' + encodeURIComponent(typeofaction);
     }
 
 </script>

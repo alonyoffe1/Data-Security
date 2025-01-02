@@ -1,9 +1,12 @@
-﻿using NetworkingProject.Models;
+﻿using Antlr.Runtime.Misc;
+using Microsoft.SqlServer.Server;
+using NetworkingProject.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using static System.Collections.Specialized.BitVector32;
 
 namespace NetworkingProject.Controllers
 {
@@ -18,23 +21,10 @@ namespace NetworkingProject.Controllers
             _bookRepository = new BookRepository(connectionString);
         }
 
-        // GET: ShoppingCart
-        public ActionResult CartPage()
-        {
-            return View();
-        }
-
-        public ActionResult SelectFormat(string title, string author)
-        {
-            ViewBag.Title = title;
-            ViewBag.Author = author;
-            return View();
-        }
-        public ActionResult AddToCart(string title, string author)
+        public ActionResult AddToCart(string title, string author, string format, string typeofaction)
         {
             // Query the database to ensure the book exists and has consistent data
             BookModel book = _bookRepository.GetBookByDetails(title, author);
-            
 
             if (book != null)
             {
@@ -43,8 +33,13 @@ namespace NetworkingProject.Controllers
                     Session["Cart"] = new List<BookModel>();
 
                 var cart = (List<BookModel>)Session["Cart"];
+
+                book.SelectedFormat = format;
+                book.SelectedAction = typeofaction;
                 cart.Add(book);
+                //shows book information
                 Session["Cart"] = cart;
+
             }
             else
             {
@@ -59,7 +54,7 @@ namespace NetworkingProject.Controllers
         // Action to display the cart with the list of books
         public ActionResult CartPageWithCart()
         {
-            return View(Session["Cart"]); // Pass the cart items to the view
+            return View(Session["Cart"]);
         }
     }
 }

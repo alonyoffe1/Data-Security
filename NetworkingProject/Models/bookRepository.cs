@@ -42,6 +42,7 @@ namespace NetworkingProject.Models
                             DiscountPrice = reader["DiscountPrice"] != DBNull.Value
                                     ? Convert.ToSingle(reader["DiscountPrice"])
                                     : (float?)null, // Safely handle nullable DiscountPrice
+                            BorrowPrice = Convert.ToSingle(reader["BorrowPrice"]),
                             PublishingYear = Convert.ToInt32(reader["PublishingYear"]),
                             Genre = reader["Genre"].ToString(),
                             AgeLim = Convert.ToInt32(reader["AgeLim"])
@@ -84,6 +85,7 @@ namespace NetworkingProject.Models
                             DiscountPrice = reader["DiscountPrice"] != DBNull.Value
                                     ? Convert.ToSingle(reader["DiscountPrice"])
                                     : (float?)null, // Safely handle nullable DiscountPrice
+                            BorrowPrice = Convert.ToSingle(reader["BorrowPrice"]),
                             PublishingYear = Convert.ToInt32(reader["PublishingYear"]),
                             Genre = reader["Genre"].ToString(),
                             AgeLim = Convert.ToInt32(reader["AgeLim"])
@@ -147,6 +149,31 @@ namespace NetworkingProject.Models
                 {
                     connection.Open();
                     int rowsAffected = command.ExecuteNonQuery();
+                    if (rowsAffected > 0)
+                    {
+                        // Update BorrowPrice
+                        string updateBorrowPriceQuery = @"
+                    UPDATE NetProj_Web_db.dbo.Books
+                    SET 
+                        BorrowPrice = CASE
+                            WHEN DiscountPrice IS NULL THEN 
+                                CASE 
+                                    WHEN (Price - 3.00) < 0 THEN 0
+                                    ELSE (Price - 3.00)
+                                END
+                            ELSE 
+                                CASE 
+                                    WHEN (DiscountPrice - 3.00) < 0 THEN 0
+                                    ELSE (DiscountPrice - 3.00)
+                                END
+                        END
+                    WHERE Title = @Title";
+
+                        SqlCommand borrowPriceCommand = new SqlCommand(updateBorrowPriceQuery, connection);
+                        borrowPriceCommand.Parameters.AddWithValue("@Title", title);
+                        borrowPriceCommand.ExecuteNonQuery();
+                    }
+
                     return rowsAffected > 0; // Return true if at least one row was updated
                 }
                 catch (Exception ex)
