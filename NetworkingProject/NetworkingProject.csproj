@@ -159,6 +159,7 @@
     <Compile Include="Controllers\BookController.cs" />
     <Compile Include="Controllers\DashboardController.cs" />
     <Compile Include="Controllers\HomePageController.cs" />
+    <Compile Include="Controllers\LibraryController.cs" />
     <Compile Include="Controllers\ShoppingCartController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -175,6 +176,8 @@
     <Compile Include="Models\AppDbContext.cs" />
     <Compile Include="Models\BookModel.cs" />
     <Compile Include="Models\bookRepository.cs" />
+    <Compile Include="Models\LibraryModel.cs" />
+    <Compile Include="Models\LibraryRepository.cs" />
     <Compile Include="Models\RegisterModel.cs" />
     <Compile Include="Models\SignInModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -241,9 +244,10 @@
     <Content Include="Views\Accounts\SignIn.cshtml" />
     <Content Include="Views\Dashboard\Index.cshtml" />
     <Content Include="Views\Accounts\Register.cshtml" />
-    <Content Include="Views\Book\Catalog.cshtml" />
     <Content Include="Views\ShoppingCart\CartPageWithCart.cshtml" />
     <Content Include="Views\ShoppingCart\SelectFormat.cshtml" />
+    <Content Include="Views\Book\Catalog.cshtml" />
+    <Content Include="Views\Library\Library.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

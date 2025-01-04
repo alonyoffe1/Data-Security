@@ -23,17 +23,24 @@ namespace NetworkingProject.Models
 
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
-                string query = "SELECT * FROM NetProj_Web_db.dbo.Books"; // Query to fetch all records
+                string query = "SELECT * FROM Books"; // Changed from NetProj_Web_db.dbo.Books
                 SqlCommand command = new SqlCommand(query, connection);
 
                 try
                 {
+                    System.Diagnostics.Debug.WriteLine("Attempting to open database connection...");
                     connection.Open();
-                    SqlDataReader reader = command.ExecuteReader();
+                    System.Diagnostics.Debug.WriteLine("Connection opened successfully");
 
+                    SqlDataReader reader = command.ExecuteReader();
+                    System.Diagnostics.Debug.WriteLine("ExecuteReader completed");
+
+                    int bookCount = 0;
                     while (reader.Read())
                     {
-                        books.Add(new BookModel
+                        bookCount++;
+                        System.Diagnostics.Debug.WriteLine($"Reading book #{bookCount}");
+                        var book = new BookModel
                         {
                             Title = reader["Title"].ToString(),
                             Author = reader["Author"].ToString(),
@@ -41,17 +48,21 @@ namespace NetworkingProject.Models
                             Price = Convert.ToSingle(reader["Price"]),
                             DiscountPrice = reader["DiscountPrice"] != DBNull.Value
                                     ? Convert.ToSingle(reader["DiscountPrice"])
-                                    : (float?)null, // Safely handle nullable DiscountPrice
+                                    : (float?)null,
                             BorrowPrice = Convert.ToSingle(reader["BorrowPrice"]),
                             PublishingYear = Convert.ToInt32(reader["PublishingYear"]),
                             Genre = reader["Genre"].ToString(),
                             AgeLim = Convert.ToInt32(reader["AgeLim"])
-                        });
+                        };
+                        books.Add(book);
                     }
+                    System.Diagnostics.Debug.WriteLine($"Total books read: {bookCount}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    System.Diagnostics.Debug.WriteLine($"ERROR in GetAllBooks: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+    
                 }
             }
 

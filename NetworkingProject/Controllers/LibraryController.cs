@@ -8,10 +8,10 @@ using System.Configuration;
 
 namespace NetworkingProject.Controllers
 {
-    public class BookController : Controller
+    public class LibraryController : Controller
     {
 
-        private readonly BookRepository _bookRepository;
+        private readonly LibraryRepository _libraryRepository;
 
         public ActionResult Index()
         {
@@ -19,15 +19,15 @@ namespace NetworkingProject.Controllers
             return RedirectToAction("Catalog");
         }
 
-        public BookController()
+        public LibraryController()
         {
             string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
-            _bookRepository = new BookRepository(connectionString);
+            _libraryRepository = new LibraryRepository(connectionString);
         }
 
-        public ActionResult Catalog()
+        public ActionResult Library()
         {
-            List<BookModel> books = _bookRepository.GetAllBooks();
+            List<LibraryModel> books = _libraryRepository.GetAllBooks();
 
             string userRole = Session["UserRole"] as string;
 
