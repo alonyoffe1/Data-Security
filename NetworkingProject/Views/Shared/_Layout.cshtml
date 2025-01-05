@@ -225,6 +225,8 @@
         <!-- Main Page button -->
         <div class="button-group">
             <button class="main-page-btn" onclick="location.href='/HomePage/Index'">Main Page</button>
+            <!-- Add the new My Library button -->
+            <button class="main-page-btn" onclick="location.href='/Library/Library'">My Library</button>
 
             @if (Session["UserRole"]?.ToString() == "Admin")
             {
