@@ -23,24 +23,17 @@ namespace NetworkingProject.Models
 
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
-                string query = "SELECT * FROM Books"; // Changed from NetProj_Web_db.dbo.Books
+                string query = "SELECT * FROM NetProj_Web_db.dbo.Books"; // Query to fetch all records
                 SqlCommand command = new SqlCommand(query, connection);
 
                 try
                 {
-                    System.Diagnostics.Debug.WriteLine("Attempting to open database connection...");
                     connection.Open();
-                    System.Diagnostics.Debug.WriteLine("Connection opened successfully");
-
                     SqlDataReader reader = command.ExecuteReader();
-                    System.Diagnostics.Debug.WriteLine("ExecuteReader completed");
 
-                    int bookCount = 0;
                     while (reader.Read())
                     {
-                        bookCount++;
-                        System.Diagnostics.Debug.WriteLine($"Reading book #{bookCount}");
-                        var book = new BookModel
+                        books.Add(new BookModel
                         {
                             Title = reader["Title"].ToString(),
                             Author = reader["Author"].ToString(),
@@ -48,21 +41,17 @@ namespace NetworkingProject.Models
                             Price = Convert.ToSingle(reader["Price"]),
                             DiscountPrice = reader["DiscountPrice"] != DBNull.Value
                                     ? Convert.ToSingle(reader["DiscountPrice"])
-                                    : (float?)null,
+                                    : (float?)null, // Safely handle nullable DiscountPrice
                             BorrowPrice = Convert.ToSingle(reader["BorrowPrice"]),
                             PublishingYear = Convert.ToInt32(reader["PublishingYear"]),
                             Genre = reader["Genre"].ToString(),
                             AgeLim = Convert.ToInt32(reader["AgeLim"])
-                        };
-                        books.Add(book);
+                        });
                     }
-                    System.Diagnostics.Debug.WriteLine($"Total books read: {bookCount}");
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"ERROR in GetAllBooks: {ex.Message}");
-                    System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-    
+                    Console.WriteLine(ex.Message);
                 }
             }
 
@@ -99,14 +88,14 @@ namespace NetworkingProject.Models
                             BorrowPrice = Convert.ToSingle(reader["BorrowPrice"]),
                             PublishingYear = Convert.ToInt32(reader["PublishingYear"]),
                             Genre = reader["Genre"].ToString(),
-                            AgeLim = Convert.ToInt32(reader["AgeLim"])
+                            AgeLim = Convert.ToInt32(reader["AgeLim"]),
                         };
                     }
-                                else
-            {
-                // Log if no record is found
-                Console.WriteLine("No book found with the provided details.");
-            }
+                    else
+                    {
+                        // Log if no record is found
+                        Console.WriteLine("No book found with the provided details.");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -271,6 +260,36 @@ namespace NetworkingProject.Models
                 {
                     Console.WriteLine($"Error deleting book: {ex.Message}");
                     return false;
+                }
+            }
+        }
+        public bool CheckIfBorrowableCopiesAvailable(string title, string author)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                string query = @"
+            SELECT BorrowCopies 
+            FROM Books 
+            WHERE Title = @Title AND Author = @Author";
+
+                SqlCommand command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@Title", title);
+                command.Parameters.AddWithValue("@Author", author);
+
+                try
+                {
+                    connection.Open();
+                    var result = command.ExecuteScalar();
+                    if (result != null && Convert.ToInt32(result) > 0)
+                    {
+                        return true; // If borrowable copies are greater than 0, return true
+                    }
+                    return false; // No borrowable copies available
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error checking borrow availability: {ex.Message}");
+                    return false; // If error occurs, assume no availability
                 }
             }
         }

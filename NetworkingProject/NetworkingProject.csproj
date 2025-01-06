@@ -18,7 +18,7 @@
     <MvcBuildViews>false</MvcBuildViews>
     <UseIISExpress>true</UseIISExpress>
     <Use64BitIISExpress />
-    <IISExpressSSLPort />
+    <IISExpressSSLPort>44314</IISExpressSSLPort>
     <IISExpressAnonymousAuthentication />
     <IISExpressWindowsAuthentication />
     <IISExpressUseClassicPipelineMode />
@@ -157,10 +157,9 @@
     <Compile Include="Controllers\AccountsController.cs" />
     <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\BookController.cs" />
-    <Compile Include="Controllers\DashboardController.cs" />
     <Compile Include="Controllers\HomePageController.cs" />
-    <Compile Include="Controllers\LibraryController.cs" />
     <Compile Include="Controllers\ShoppingCartController.cs" />
+    <Compile Include="Controllers\WaitingListController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -176,8 +175,6 @@
     <Compile Include="Models\AppDbContext.cs" />
     <Compile Include="Models\BookModel.cs" />
     <Compile Include="Models\bookRepository.cs" />
-    <Compile Include="Models\LibraryModel.cs" />
-    <Compile Include="Models\LibraryRepository.cs" />
     <Compile Include="Models\RegisterModel.cs" />
     <Compile Include="Models\SignInModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -242,18 +239,16 @@
     <Content Include="Views\HomePage\Search.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Accounts\SignIn.cshtml" />
-    <Content Include="Views\Dashboard\Index.cshtml" />
     <Content Include="Views\Accounts\Register.cshtml" />
-    <Content Include="Views\ShoppingCart\CartPageWithCart.cshtml" />
-    <Content Include="Views\ShoppingCart\SelectFormat.cshtml" />
     <Content Include="Views\Book\Catalog.cshtml" />
-    <Content Include="Views\Library\Library.cshtml" />
+    <Content Include="Views\ShoppingCart\CartPageWithCart.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
     <Folder Include="images\" />
     <Folder Include="js\" />
     <Folder Include="Views\Admin\" />
+    <Folder Include="Views\WaitingList\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap.rtl.min.css.map" />
@@ -311,7 +306,7 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>64577</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:64577/</IISUrl>
+          <IISUrl>https://localhost:44314/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>

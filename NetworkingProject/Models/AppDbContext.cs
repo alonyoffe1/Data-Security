@@ -10,7 +10,5 @@ namespace NetworkingProject.Models
         public AppDbContext() : base("name=NetProj_Web_db") { }
 
         public DbSet<BookModel> Books { get; set; }
-
-        public System.Data.Entity.DbSet<NetworkingProject.Models.LibraryModel> LibraryModels { get; set; }
     }
 }

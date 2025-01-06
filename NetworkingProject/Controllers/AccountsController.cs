@@ -40,6 +40,7 @@ namespace NetworkingProject.Controllers
                             cmd.Parameters.AddWithValue("@Password", model.Password);
 
                             string role = (string)cmd.ExecuteScalar(); //retrieve the role as a string from the db
+                            Session["UserEmail"] = model.Email;
                             Session["UserRole"] = role;
                             if (role == "Admin")
                             {

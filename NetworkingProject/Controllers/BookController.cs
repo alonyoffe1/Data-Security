@@ -21,7 +21,7 @@ namespace NetworkingProject.Controllers
 
         public BookController()
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
+            string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
             _bookRepository = new BookRepository(connectionString);
         }
 

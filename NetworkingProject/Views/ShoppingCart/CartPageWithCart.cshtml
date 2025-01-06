@@ -20,42 +20,208 @@
         else
         {
             <div class="container my-5">
-                @foreach (var book in Model)
-                {
-                    <div class="col-md-2 d-flex justify-content-center">
-                        <div class="card border-0 shadow-sm" style="width: 200px;">
-                            <!-- Placeholder for Book Image -->
-                            <img src="https://via.placeholder.com/150x200" class="card-img-top" alt="@book.Title" />
+                <div class="d-flex flex-wrap">
+                    @foreach (var book in Model)
+                    {
+                        <div class="d-flex justify-content-center mb-4" style="width: 20%;">
+                            <div class="card border-0 shadow-sm" style="width: 200px;">
 
-                            <div class="card-body text-center">
-                                <h6 class="text-danger fw-bold mb-1">@book.Author</h6>
-                                <p class="card-title fw-bold mb-1">@book.Title</p>
-                                <p class="card-text text-muted mb-2">Format: @book.SelectedFormat</p>
-                                <div class="mb-2">
-                                    <span class="fs-5 fw-bold text-primary">
-                                        @if (book.SelectedAction == "Buy")
-                                        {
-                                            @($"{book.Price:0.00}$")
-                                        }
-                                        else if (book.SelectedAction == "Borrow")
-                                        {
-                                            @($"{book.BorrowPrice:0.00}$")
-                                        }
-                                    </span>
+                                <div class="card border-0 shadow-sm" style="width: 200px;">
+                                    <!-- Placeholder for Book Image -->
+                                    <img src="https://via.placeholder.com/150x200" class="card-img-top" alt="@book.Title" />
+
+                                    <div class="card-body text-center">
+                                        <h6 class="text-danger fw-bold mb-1">@book.Author</h6>
+                                        <p class="card-title fw-bold mb-1">@book.Title</p>
+                                        <p class="card-text text-muted mb-2">Format: @book.SelectedFormat</p>
+                                        <div class="mb-2">
+                                            <span class="fs-5 fw-bold text-primary">
+                                                @if (book.SelectedAction == "Buy")
+                                                {
+                                                    @($"{book.Price:0.00}$")
+                                                }
+                                                else if (book.SelectedAction == "Borrow")
+                                                {
+                                                    @($"{book.BorrowPrice:0.00}$")
+                                                }
+                                            </span>
+                                        </div>
+                                        <a href="@Url.Action("RemoveFromCart", "ShoppingCart", new { title = book.Title })"
+                                           class="btn btn-danger btn-sm fw-bold">
+                                            Remove
+                                        </a>
+                                    </div>
                                 </div>
-                                <a href="@Url.Action("RemoveFromCart", "ShoppingCart", new { title = book.Title })"
-                                   class="btn btn-danger btn-sm fw-bold">
-                                    Remove
-                                </a>
                             </div>
                         </div>
-                    </div>
-                }
+                    }
+                </div>
             </div>
+            <!-- "Buy Now" button -->
+            <div class="text-center mt-4">
+                <button class="btn btn-success btn-lg" onclick="checkoutAndShowModal()">Buy Now</button>
+            </div>
+            <!-- Summary Modal -->
+            <div class="modal fade" id="summaryModal" tabindex="-1" aria-labelledby="summaryModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="summaryModalLabel">Order Summary</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p id="totalPrice">Total Price: $0.00</p>
+                            <div id="unavailableBooksSection" style="display:none;">
+                                <h6>Unavailable Books:</h6>
+                                <ul id="unavailableBooksList"></ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="proceedWithOrder()">Proceed</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                function checkoutAndShowModal() {
+                    fetch('/ShoppingCart/Checkout', {
+                        method: 'GET'
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Error during checkout');
+                            }
+                            return response.json(); // Parse the JSON response
+                        })
+                        .then(data => {
+                            const totalPriceElement = document.getElementById('totalPrice');
+                            const unavailableBooksSection = document.getElementById('unavailableBooksSection');
+                            const unavailableBooksList = document.getElementById('unavailableBooksList');
+
+                            // Set total price
+                            totalPriceElement.textContent = `Total Price: $${data.totalPrice.toFixed(2)}`;
+
+                            // Clear the unavailable books list
+                            unavailableBooksList.innerHTML = '';
+
+                            if (data.unavailableBooks && data.unavailableBooks.length > 0) {
+                                // Show unavailable books section
+                                unavailableBooksSection.style.display = 'block';
+
+                                // Populate the unavailable books list
+                                data.unavailableBooks.forEach(book => {
+                                    const listItem = document.createElement('li');
+                                    listItem.textContent = `${book.title} by ${book.author}`;
+                                    unavailableBooksList.appendChild(listItem);
+                                });
+                            } else {
+                                // Hide unavailable books section if there are none
+                                unavailableBooksSection.style.display = 'none';
+                            }
+
+                            // Show the modal
+                            const summaryModal = new bootstrap.Modal(document.getElementById('summaryModal'));
+                            summaryModal.show();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred during checkout.');
+                        });
+                }
+
+
+                function proceedWithOrder() {
+                    // Show the payment method selection modal
+                    const paymentMethodModal = new bootstrap.Modal(document.getElementById('paymentMethodModal'));
+                    paymentMethodModal.show();
+                }
+
+            </script>
+
+            <!-- Payment Method Selection Modal -->
+            <div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-labelledby="paymentMethodModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="paymentMethodModalLabel">Choose Payment Method</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <button class="btn btn-primary" onclick="payWithCreditCard()">Pay with Credit Card</button>
+                            <button class="btn btn-success" onclick="payWithPaypal()">Pay with PayPal</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                function payWithCreditCard() {
+                    // Show the credit card payment modal
+                    const creditCardModal = new bootstrap.Modal(document.getElementById('creditCardModal'));
+                    creditCardModal.show();
+                }
+
+                function payWithPaypal() {
+                    // Redirect to PayPal payment page
+                    window.location.href = 'https://www.paypal.com'; // Modify to PayPal's API or redirection URL
+                }
+            </script>
+            <!-- Credit Card Payment Modal -->
+            <div class="modal fade" id="creditCardModal" tabindex="-1" aria-labelledby="creditCardModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="creditCardModalLabel">Enter Credit Card Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="ccNumber" class="form-label">Credit Card Number</label>
+                                <input type="text" class="form-control" id="ccNumber" required />
+                            </div>
+                            <div class="mb-3">
+                                <label for="expiryDate" class="form-label">Expiry Date</label>
+                                <input type="text" class="form-control" id="expiryDate" required />
+                            </div>
+                            <div class="mb-3">
+                                <label for="cvc" class="form-label">CVC</label>
+                                <input type="text" class="form-control" id="cvc" required />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="processPayment()">Submit Payment</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                function processPayment() {
+                    const ccNumber = document.getElementById("ccNumber").value;
+                    const expiryDate = document.getElementById("expiryDate").value;
+                    const cvc = document.getElementById("cvc").value;
+
+                    // Send payment details to the server via POST
+                    fetch('/ShoppingCart/ProcessPayment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ccNumber, expiryDate, cvc }),
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert("Payment Successful!");
+                                window.location.href = '/HomePage/Index';
+                            } else {
+                                alert("Payment Failed: " + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                }
+            </script>
+            <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+            <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
         }
-        <!-- Include Bootstrap JS for any interactions if needed -->
-        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 </body>
 </html>

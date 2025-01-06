@@ -15,7 +15,7 @@ namespace NetworkingProject.Controllers
 
         public AdminController() //initialies book controller for methods to use
         {
-            string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
+            string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
             _bookRepository = new BookRepository(connectionString);
         }
 
@@ -56,14 +56,6 @@ namespace NetworkingProject.Controllers
                 // Call the repository or database logic to set the discount for the book
                 bool isDiscountSet = _bookRepository.SetDiscountByTitle(title, discountPrice, discountPeriod);
 
-                //if (isDiscountSet)
-                //{
-                //    TempData["SuccessMessage"] = "Discount applied successfully.";
-                //}
-                //else
-                //{
-                //    TempData["ErrorMessage"] = "Failed to apply the discount. Please try again.";
-                //}
             }
             catch (Exception ex)
             {
