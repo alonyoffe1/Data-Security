@@ -175,7 +175,16 @@ namespace NetworkingProject.Controllers
             bool isPaymentSuccessful = SimulatePaymentProcessing(ccNumber, expiryDate, cvc);
             if (isPaymentSuccessful)
             {
+                // Instantiate WaitingListController to call AddToBorrowedBooks
+                var waitingListController = new WaitingListController();
 
+                // Add each borrowed book to the BorrowedBooks table
+                string userEmail = (string)Session["UserEmail"];
+                foreach (var book in borrowedBooks)
+                {
+                    // Call the AddToBorrowedBooks method
+                    var result = waitingListController.AddToBorrowedBooks(userEmail, book.Title);
+                }
                 return Json(new { success = true, message = "Payment processed successfully" }, JsonRequestBehavior.AllowGet);
             }
             else

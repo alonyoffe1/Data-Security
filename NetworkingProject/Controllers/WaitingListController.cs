@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NetworkingProject.Models;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
@@ -11,6 +12,7 @@ namespace NetworkingProject.Controllers
 {
     public class WaitingListController : Controller
     {
+        //The methods below are used to interact with the WaitingList Table
         [HttpPost]
         public JsonResult Add(string title)
         {
@@ -63,15 +65,7 @@ namespace NetworkingProject.Controllers
 
                     if (rowsAffected > 0)
                     {
-                        //Since the user borrowed a book his/her borrowed book count is raised by 1
-                        string incrementBorrowedBooksQuery = @"
-                            UPDATE Users
-                            SET BorrowedBooks = BorrowedBooks + 1
-                            WHERE Email = @Email";
 
-                        SqlCommand incrementCommand = new SqlCommand(incrementBorrowedBooksQuery, connection);
-                        incrementCommand.Parameters.AddWithValue("@Email", userEmail);
-                        incrementCommand.ExecuteNonQuery();
                         // Return a success response if the insertion is successful
                         return Json(new { success = true });
                     }
@@ -85,6 +79,78 @@ namespace NetworkingProject.Controllers
                 {
                     // Log the error (optional) and return an error response
                     return Json(new { success = false, message = "An error occurred: " + ex.Message });
+                }
+            }
+        }
+        //The methods below are used to interact with the BorrowedBooks Table
+        public ActionResult AddToBorrowedBooks(string userEmail, string bookTitle)
+        {
+            // Retrieve the borrow date and due date (this can be dynamic or fixed)
+            DateTime borrowDate = DateTime.Now;
+            DateTime dueDate = borrowDate.AddDays(30); // Assuming a 30-day borrowing period
+
+            // Insert the user into BorrowedBooks table
+            string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ToString();
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                try
+                {
+                    connection.Open();
+
+                    // 1. Insert the record into BorrowedBooks table
+                    string query = "INSERT INTO BorrowedBooks (UserEmail, BookTitle, BorrowDate, DueDate) " +
+                                   "VALUES (@UserEmail, @BookTitle, @BorrowDate, @DueDate)";
+                    using (SqlCommand cmd = new SqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@UserEmail", userEmail);
+                        cmd.Parameters.AddWithValue("@BookTitle", bookTitle);
+                        cmd.Parameters.AddWithValue("@BorrowDate", borrowDate);
+                        cmd.Parameters.AddWithValue("@DueDate", dueDate);
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                        if (rowsAffected == 0)
+                        {
+                            return Json(new { success = false, message = "Failed to borrow the book." }, JsonRequestBehavior.AllowGet);
+                        }
+                    }
+
+                    // 2. Increment the BorrowedBooks count for the user
+                    string incrementBorrowedBooksQuery = @"
+                        UPDATE Users
+                        SET BorrowedBooks = BorrowedBooks + 1
+                        WHERE Email = @Email";
+                    using (SqlCommand incrementCommand = new SqlCommand(incrementBorrowedBooksQuery, connection))
+                    {
+                        incrementCommand.Parameters.AddWithValue("@Email", userEmail);
+                        int rowsUpdated = incrementCommand.ExecuteNonQuery();
+                        if (rowsUpdated == 0)
+                        {
+                            return Json(new { success = false, message = "Failed to update user's borrowed books count." }, JsonRequestBehavior.AllowGet);
+                        }
+                    }
+
+                    // 3. Subtract 1 from BorrowCopies in the Books table for the specific book
+                    string decrementBorrowCopiesQuery = @"
+                        UPDATE Books
+                        SET BorrowCopies = BorrowCopies - 1
+                        WHERE Title = @BookTitle";
+                    using (SqlCommand decrementCommand = new SqlCommand(decrementBorrowCopiesQuery, connection))
+                    {
+                        decrementCommand.Parameters.AddWithValue("@BookTitle", bookTitle);
+                        int rowsUpdated = decrementCommand.ExecuteNonQuery();
+                        if (rowsUpdated == 0)
+                        {
+                            return Json(new { success = false, message = "Failed to update book borrow count." }, JsonRequestBehavior.AllowGet);
+                        }
+                    }
+
+                    // If everything was successful, return success
+                    return Json(new { success = true, message = "Book successfully borrowed." }, JsonRequestBehavior.AllowGet);
+                }
+                catch (Exception ex)
+                {
+                    // In case of an error, return a failure message
+                    return Json(new { success = false, message = "An error occurred: " + ex.Message }, JsonRequestBehavior.AllowGet);
                 }
             }
         }
