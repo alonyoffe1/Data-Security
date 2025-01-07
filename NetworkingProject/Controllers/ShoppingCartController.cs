@@ -15,57 +15,73 @@ namespace NetworkingProject.Controllers
 
         private readonly BookRepository _bookRepository;
 
-        public ShoppingCartController() //initialies book controller for methods to use
+        public ShoppingCartController() //initializes book controller for methods to use
         {
-            string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
+            string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
             _bookRepository = new BookRepository(connectionString);
         }
 
         public ActionResult AddToCart(string title, string author, string format, string typeofaction)
         {
-            // Query the database to ensure the book exists and has consistent data
-            BookModel book = _bookRepository.GetBookByDetails(title, author);
-
-            if (book != null)
+            try
             {
-                // Add the book to the cart
-                if (Session["Cart"] == null)
-                    Session["Cart"] = new List<BookModel>();
+                // Query the database to ensure the book exists and has consistent data
+                BookModel book = _bookRepository.GetBookByDetails(title, author);
 
-                var cart = (List<BookModel>)Session["Cart"];
-
-                book.SelectedFormat = format;
-                book.SelectedAction = typeofaction;
-                cart.Add(book);
-                //shows book information
-                Session["Cart"] = cart;
-
-                // If the action is "Borrow", store it in the borrowed books list
-                if (typeofaction == "Borrow")
+                if (book != null)
                 {
-                    if (Session["BorrowedBooks"] == null)
-                        Session["BorrowedBooks"] = new List<BookModel>();
+                    // Add the book to the cart
+                    if (Session["Cart"] == null)
+                        Session["Cart"] = new List<BookModel>();
 
-                    var borrowedBooks = (List<BookModel>)Session["BorrowedBooks"];
-                    borrowedBooks.Add(book);
-                    Session["BorrowedBooks"] = borrowedBooks;
+                    var cart = (List<BookModel>)Session["Cart"];
+
+                    book.SelectedFormat = format;
+                    book.SelectedAction = typeofaction;
+                    cart.Add(book);
+
+                    // Shows book information
+                    Session["Cart"] = cart;
+
+                    // If the action is "Borrow", store it in the borrowed books list
+                    if (typeofaction == "Borrow")
+                    {
+                        if (Session["BorrowedBooks"] == null)
+                            Session["BorrowedBooks"] = new List<BookModel>();
+
+                        var borrowedBooks = (List<BookModel>)Session["BorrowedBooks"];
+                        borrowedBooks.Add(book);
+                        Session["BorrowedBooks"] = borrowedBooks;
+                    }
+                }
+                else
+                {
+                    // Handle the case where the book is not found
+                    return RedirectToAction("Error");
                 }
 
+                return RedirectToAction("CartPageWithCart");
             }
-            else
+            catch (Exception ex)
             {
-                // Handle the case where the book is not found
+                // Log or handle the error
+                Console.WriteLine($"Error in AddToCart: {ex.Message}");
                 return RedirectToAction("Error");
             }
-
-            return RedirectToAction("CartPageWithCart");
         }
-
 
         // Action to display the cart with the list of books
         public ActionResult CartPageWithCart()
         {
-            return View(Session["Cart"]);
+            try
+            {
+                return View(Session["Cart"]);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in CartPageWithCart: {ex.Message}");
+                return RedirectToAction("Error");
+            }
         }
 
         [HttpGet]
@@ -79,142 +95,164 @@ namespace NetworkingProject.Controllers
             catch (Exception ex)
             {
                 // Log or handle the error as needed
+                Console.WriteLine($"Error in CheckBorrowAvailability: {ex.Message}");
                 return Json(new { isAvailable = false }, JsonRequestBehavior.AllowGet);
             }
         }
 
-
         [HttpGet]
         public JsonResult Checkout()
         {
-            // Initialize borrowedBooks and cart sessions
-            var borrowedBooks = (List<BookModel>)Session["BorrowedBooks"] ?? new List<BookModel>();
-            var cart = (List<BookModel>)Session["Cart"] ?? new List<BookModel>();
-
-            var unavailableBooks = new List<BookModel>();
-            float totalPrice = 0;
-
-            // Step 1: Check availability for borrowed books
-            foreach (var book in borrowedBooks.ToList()) // Using ToList() to avoid modification during iteration
+            try
             {
-                // Perform a server-side check for availability
-                bool isAvailable = _bookRepository.CheckIfBorrowableCopiesAvailable(book.Title, book.Author);
+                // Initialize borrowedBooks and cart sessions
+                var borrowedBooks = (List<BookModel>)Session["BorrowedBooks"] ?? new List<BookModel>();
+                var cart = (List<BookModel>)Session["Cart"] ?? new List<BookModel>();
 
-                if (!isAvailable)
+                var unavailableBooks = new List<BookModel>();
+                float totalPrice = 0;
+
+                // Step 1: Check availability for borrowed books
+                foreach (var book in borrowedBooks.ToList()) // Using ToList() to avoid modification during iteration
                 {
-                    unavailableBooks.Add(book);
-                    borrowedBooks.Remove(book);
+                    // Perform a server-side check for availability
+                    bool isAvailable = _bookRepository.CheckIfBorrowableCopiesAvailable(book.Title, book.Author);
+
+                    if (!isAvailable)
+                    {
+                        unavailableBooks.Add(book);
+                        borrowedBooks.Remove(book);
+                    }
+                    else
+                    {
+                        totalPrice += book.BorrowPrice; // Add rental fee for borrowed books
+                    }
                 }
-                else
+
+                // Step 2: Calculate the price of books in Cart with "Buy" action
+                foreach (var book in cart)
                 {
-                    totalPrice += book.BorrowPrice; // Add rental fee for borrowed books
+                    if (book.SelectedAction == "Buy")
+                    {
+                        totalPrice += book.Price; // Add price for books being bought from the Cart
+                    }
                 }
+
+                // Step 3: Update the session with the remaining borrowedBooks and cart (after removing unavailable books)
+                Session["BorrowedBooks"] = borrowedBooks;
+
+                // Step 4: Return the JSON response with total price and unavailable books
+                return Json(new
+                {
+                    success = true,
+                    totalPrice = totalPrice,
+                    unavailableBooks = unavailableBooks.Select(b => new { title = b.Title, author = b.Author }).ToList()
+                }, JsonRequestBehavior.AllowGet);
             }
-
-            // Step 2: Calculate the price of books in Cart with "Buy" action
-            foreach (var book in cart)
+            catch (Exception ex)
             {
-                if (book.SelectedAction == "Buy")
-                {
-                    totalPrice += book.Price; // Add price for books being bought from the Cart
-                }
+                Console.WriteLine($"Error in Checkout: {ex.Message}");
+                return Json(new { success = false, message = "Error during checkout" }, JsonRequestBehavior.AllowGet);
             }
-
-            // Step 3: Update the session with the remaining borrowedBooks and cart (after removing unavailable books)
-            Session["BorrowedBooks"] = borrowedBooks;
-
-            // Step 4: Return the JSON response with total price and unavailable books
-            return Json(new
-            {
-                success = true,
-                totalPrice = totalPrice,
-                unavailableBooks = unavailableBooks.Select(b => new { title = b.Title, author = b.Author }).ToList()
-            }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
         [RequireHttps] // Ensures this method is only accessible over HTTPS
         public ActionResult ProcessPayment(string ccNumber, string expiryDate, string cvc)
         {
-            // Simulate borrowed books availability check
-            var borrowedBooks = (List<BookModel>)Session["BorrowedBooks"] ?? new List<BookModel>();
-            var unavailableBooks = new List<BookModel>();
-
-            foreach (var book in borrowedBooks.ToList()) // Using ToList() to avoid modification during iteration
+            try
             {
-                // Perform a server-side check for availability
-                bool isAvailable = _bookRepository.CheckIfBorrowableCopiesAvailable(book.Title, book.Author);
+                // Simulate borrowed books availability check
+                var borrowedBooks = (List<BookModel>)Session["BorrowedBooks"] ?? new List<BookModel>();
+                var unavailableBooks = new List<BookModel>();
 
-                if (!isAvailable)
+                foreach (var book in borrowedBooks.ToList()) // Using ToList() to avoid modification during iteration
                 {
-                    unavailableBooks.Add(book);
-                    borrowedBooks.Remove(book); // Remove unavailable book from the session
+                    // Perform a server-side check for availability
+                    bool isAvailable = _bookRepository.CheckIfBorrowableCopiesAvailable(book.Title, book.Author);
+
+                    if (!isAvailable)
+                    {
+                        unavailableBooks.Add(book);
+                        borrowedBooks.Remove(book); // Remove unavailable book from the session
+                    }
+                }
+
+                // Update the session with remaining borrowed books
+                Session["BorrowedBooks"] = borrowedBooks;
+
+                // If any unavailable books were found, return an error
+                if (unavailableBooks.Any())
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Some borrowed books are no longer available.",
+                        unavailableBooks = unavailableBooks.Select(b => new { b.Title, b.Author }).ToList()
+                    });
+                }
+
+                // Validate the input
+                if (string.IsNullOrWhiteSpace(ccNumber) || string.IsNullOrWhiteSpace(expiryDate) || string.IsNullOrWhiteSpace(cvc))
+                {
+                    return Json(new { success = false, message = "Invalid card details" }, JsonRequestBehavior.AllowGet);
+                }
+
+                // Simulate payment processing
+                bool isPaymentSuccessful = SimulatePaymentProcessing(ccNumber, expiryDate, cvc);
+                if (isPaymentSuccessful)
+                {
+                    return Json(new { success = true, message = "Payment processed successfully" }, JsonRequestBehavior.AllowGet);
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Payment failed. Please try again." }, JsonRequestBehavior.AllowGet);
                 }
             }
-
-            // Update the session with remaining borrowed books
-            Session["BorrowedBooks"] = borrowedBooks;
-
-            // If any unavailable books were found, return an error
-            if (unavailableBooks.Any())
+            catch (Exception ex)
             {
-                return Json(new
-                {
-                    success = false,
-                    message = "Some borrowed books are no longer available.",
-                    unavailableBooks = unavailableBooks.Select(b => new { b.Title, b.Author }).ToList()
-                });
-            }
-            // Validate the input
-            if (string.IsNullOrWhiteSpace(ccNumber) || string.IsNullOrWhiteSpace(expiryDate) || string.IsNullOrWhiteSpace(cvc))
-            {
-                return Json(new { success = false, message = "Invalid card details" }, JsonRequestBehavior.AllowGet);
-            }
-
-            // Simulate payment processing
-            bool isPaymentSuccessful = SimulatePaymentProcessing(ccNumber, expiryDate, cvc);
-            if (isPaymentSuccessful)
-            {
-
-                return Json(new { success = true, message = "Payment processed successfully" }, JsonRequestBehavior.AllowGet);
-            }
-            else
-            {
-                return Json(new { success = false, message = "Payment failed. Please try again." }, JsonRequestBehavior.AllowGet);
+                Console.WriteLine($"Error in ProcessPayment: {ex.Message}");
+                return Json(new { success = false, message = "Error during payment processing" }, JsonRequestBehavior.AllowGet);
             }
         }
 
         // Simulated payment processing logic
         private bool SimulatePaymentProcessing(string ccNumber, string expiryDate, string cvc)
         {
-            // Check if the credit card number is exactly 16 digits
-            if (ccNumber.Length != 16 || !ccNumber.All(char.IsDigit))
+            try
             {
+                // Check if the credit card number is exactly 16 digits
+                if (ccNumber.Length != 16 || !ccNumber.All(char.IsDigit))
+                {
+                    return false;
+                }
+
+                // Check if the expiry date is in the format MM/YY
+                if (expiryDate.Length != 5 || expiryDate[2] != '/')
+                {
+                    return false;
+                }
+
+                string[] dateParts = expiryDate.Split('/');
+                if (!int.TryParse(dateParts[0], out int month) || !int.TryParse(dateParts[1], out int year) || month < 1 || month > 12)
+                {
+                    return false;
+                }
+
+                // Check if the CVC is exactly 3 digits
+                if (cvc.Length != 3 || !cvc.All(char.IsDigit))
+                {
+                    return false;
+                }
+
+                // If all checks pass, simulate a successful payment
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SimulatePaymentProcessing: {ex.Message}");
                 return false;
             }
-
-            // Check if the expiry date is in the format MM/YY
-            if (expiryDate.Length != 5 || expiryDate[2] != '/')
-            {
-                return false;
-            }
-
-            string[] dateParts = expiryDate.Split('/');
-            if (!int.TryParse(dateParts[0], out int month) || !int.TryParse(dateParts[1], out int year) || month < 1 || month > 12)
-            {
-                return false;
-            }
-
-            // Check if the CVC is exactly 3 digits
-            if (cvc.Length != 3 || !cvc.All(char.IsDigit))
-            {
-                return false;
-            }
-
-            // If all checks pass, simulate a successful payment
-            return true;
         }
-
-
     }
 }

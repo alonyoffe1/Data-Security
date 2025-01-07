@@ -20,6 +20,7 @@ namespace NetworkingProject.Models
         public string Genre { get; set; }
         public int AgeLim { get; set; }
         public string SelectedFormat { get; set; }
-        public string SelectedAction { get; set; } //property to hold the action (Buy or Borrow)
+        public string SelectedAction { get; set; }
+        public string Picture { get; set; }
     }
 }

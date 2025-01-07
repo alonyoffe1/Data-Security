@@ -158,6 +158,7 @@
     <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\BookController.cs" />
     <Compile Include="Controllers\HomePageController.cs" />
+    <Compile Include="Controllers\LibraryController.cs" />
     <Compile Include="Controllers\ShoppingCartController.cs" />
     <Compile Include="Controllers\WaitingListController.cs" />
     <Compile Include="Global.asax.cs">
@@ -175,6 +176,8 @@
     <Compile Include="Models\AppDbContext.cs" />
     <Compile Include="Models\BookModel.cs" />
     <Compile Include="Models\bookRepository.cs" />
+    <Compile Include="Models\LibraryModel.cs" />
+    <Compile Include="Models\LibraryRepository.cs" />
     <Compile Include="Models\RegisterModel.cs" />
     <Compile Include="Models\SignInModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
