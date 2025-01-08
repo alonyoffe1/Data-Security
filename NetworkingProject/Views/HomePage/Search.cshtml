@@ -1,10 +1,400 @@
-﻿
+﻿@model IEnumerable<NetworkingProject.Models.BookModel>
+
 @{
-    Layout = "~/Views/Shared/_Layout.cshtml"; <!-- Reference the shared layout -->
+    ViewBag.Title = "Search Results";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    bool isAdmin = ViewBag.IsAdmin ?? false;  // Add null check here
 }
 
-<div class="search-results">
-    <h1>Search Results</h1>
-    <p>You searched for: "@ViewBag.Query"</p>
-    <p>@ViewBag.Message</p>
+<div class="container my-5">
+    <h2>Search Results</h2>
+
+    @if (!Model.Any())
+    {
+        <p>No books found matching your search.</p>
+    }
+    else
+    {
+        <!-- Filters -->
+        <div class="mb-4">
+            <form method="get" action="@Url.Action("Catalog", "Book")">
+                <!-- Sort Options -->
+                <div class="d-flex mb-3">
+                    <select name="sortOrder" class="form-select me-3" onchange="this.form.submit()">
+                        <option value="price_asc" @(Request["sortOrder"] == "price_asc" ? "selected" : "")>Price: Low to High</option>
+                        <option value="price_desc" @(Request["sortOrder"] == "price_desc" ? "selected" : "")>Price: High to Low</option>
+                        <option value="popularity" @(Request["sortOrder"] == "popularity" ? "selected" : "")>Most Popular</option>
+                        <option value="genre" @(Request["sortOrder"] == "genre" ? "selected" : "")>Genre</option>
+                        <option value="year" @(Request["sortOrder"] == "year" ? "selected" : "")>Year of Publishing</option>
+                    </select>
+
+                    <!-- Author Filter -->
+                    <input type="text" name="author" class="form-control me-3" placeholder="Author" value="@Request["author"]" />
+
+                    <!-- Genre Filter -->
+                    <input type="text" name="genre" class="form-control me-3" placeholder="Genre" value="@Request["genre"]" />
+
+                    <!-- Price Range Filter -->
+                    <input type="number" name="minPrice" class="form-control me-3" placeholder="Min Price" value="@Request["minPrice"]" step="0.01" />
+                    <input type="number" name="maxPrice" class="form-control me-3" placeholder="Max Price" value="@Request["maxPrice"]" step="0.01" />
+
+                    <!-- On Sale Filter -->
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="onSale" @(Request["onSale"] == "true" ? "checked" : "") />
+                        <label class="form-check-label">On Sale</label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+        <h1 class="text-center mb-4 fw-bold">Our Book Collection</h1>
+        <!-- Bootstrap Grid -->
+        <div class="row g-4">
+            @foreach (var book in Model)
+            {
+                <div class="col-md-2 d-flex justify-content-center">
+                    <div class="card border-0 shadow-sm" style="width: 200px;">
+                        <!-- Display the Book Image -->
+                        <img src="@book.Picture" class="card-img-top" alt="@book.Title" />
+
+                        <!-- Card Body -->
+                        <div class="card-body text-center">
+                            <h6 class="text-danger fw-bold mb-1">@book.Author</h6>
+                            <p class="card-title fw-bold mb-1">@book.Title</p>
+                            <br />
+                            <h6 class="text-danger fw-bold mb-1">Published in: @book.PublishingYear</h6>
+                            <h6 class="text-danger fw-bold mb-1">Genre: @book.Genre</h6>
+
+                            @if (isAdmin)  // Use the new variable instead of ViewBag.IsAdmin
+                            {
+                                <!-- Button to open the modal for editing price details -->
+                                <button class="btn btn-warning fs-5 fw-bold"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#priceEditModal"
+                                        onclick="openPriceEditModal('@book.Title', @book.Price)">
+                                    @if (book.DiscountPrice.HasValue)
+                                    {
+                                        <span class="text-decoration-line-through text-danger">@book.Price.ToString("0.00")$</span>
+                                        <span class="ms-2 text-success">@book.DiscountPrice.Value.ToString("0.00")$</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="fs-5 fw-bold text-primary">@book.Price.ToString("0.00")$</span>
+                                    }
+                                </button>
+                            }
+                            else
+                            {
+                                if (book.DiscountPrice.HasValue && book.DiscountPrice.Value != book.Price)
+                                {
+                                    <span class="text-decoration-line-through text-danger">@book.Price.ToString("0.00")$</span>
+                                    <span class="ms-2 text-success">@book.DiscountPrice.Value.ToString("0.00")$</span>
+                                }
+                                else
+                                {
+                                    <span class="fs-5 fw-bold text-primary">@book.Price.ToString("0.00")$</span>
+                                }
+                            }
+                            <div class="d-flex flex-column gap-2">
+                                @if (isAdmin)  // Use the new variable here too
+                                {
+                                    <a href="@Url.Action("DeleteBook", "Admin", new { id = book.Title })"
+                                       class="btn btn-danger btn-sm px-4 fw-bold"
+                                       onclick="return confirm('Are you sure you want to delete this book?');">
+                                        Delete Book →
+                                    </a>
+                                }
+                                <a href="#"
+                                   class="btn btn-primary btn-sm px-4 fw-bold"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#formatSelectionModal"
+                                   onclick="openFormatModal('@book.Title', '@book.Author', 'Buy')">
+                                    Buy Now →
+                                </a>
+                                <a href="#"
+                                   class="btn btn-secondary btn-sm px-4 fw-bold"
+                                   onclick="openFormatModal('@book.Title', '@book.Author', 'Borrow')">
+                                    Borrow for @book.BorrowPrice
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 </div>
+<!-- Modal HTMLs -->
+<!-- Modal for price change made by admins -->
+<div class="modal fade" id="priceEditModal" tabindex="-1" aria-labelledby="priceEditLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="priceEditLabel">Manage Discount for Books</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <!-- Hidden field for book title -->
+                    <input type="hidden" id="modalBookTitle">
+
+                    <!-- Current Price Display -->
+                    <div class="mb-3">
+                        <label for="currentPrice" class="form-label">Current Price:</label>
+                        <input type="text" class="form-control" id="currentPrice" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="discountPrice" class="form-label">Discount Price</label>
+                        <input type="number" class="form-control" id="discountPrice" placeholder="Enter discounted price" min="0" step="0.01">
+                    </div>
+
+                    <!-- Discount End Date -->
+                    <div class="mb-3" id="discountFields">
+                        <label for="discountPeriod" class="form-label">Discount End Date:</label>
+                        <input type="date" class="form-control" id="discountPeriod" max="">
+                        <small class="form-text text-muted">Discount lasts for a maximum of 7 days.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveDiscountChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Function to open the modal and set the current price
+    function openPriceEditModal(title, price) {
+        // Set the title and price to the modal inputs
+        document.getElementById('modalBookTitle').value = title;
+        document.getElementById('currentPrice').value = price.toFixed(2); // Display current price
+        document.getElementById('discountPrice').value = ''; // Reset the discount field
+        document.getElementById('discountPeriod').value = ''; // Reset the discount end date field
+
+        // Show the modal
+        var myModal = new bootstrap.Modal(document.getElementById('priceEditModal'));
+        myModal.show();
+
+        var modalElement = document.getElementById('priceEditModal');
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            document.body.classList.remove('modal-open');  // Remove the 'modal-open' class
+            var backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();  // Remove any lingering backdrop
+            }
+            document.body.style.overflow = '';  // Restore scrolling
+        });
+
+    }
+
+    // Function to validate and save the discount price
+    function saveDiscountChanges() {
+        var discountPrice = parseFloat(document.getElementById('discountPrice').value);
+        var currentPrice = parseFloat(document.getElementById('currentPrice').value);
+        var discountPeriod = document.getElementById('discountPeriod').value;
+        var bookTitle = document.getElementById('modalBookTitle').value;
+
+        if (discountPrice < 0 && discountPrice !== -1000) {
+            alert("Discount price cannot be negative");
+            return; // Prevent further execution if discountPrice is negative and not -1000
+        }
+        if (discountPrice > currentPrice) {
+            alert("The discount price cannot be higher than the current price.");
+            return; // Prevent further execution if the discount price is invalid
+        }
+        // Validate the discount price and period
+        else if ((discountPrice && discountPrice <= currentPrice) || discountPrice == -1000) {
+
+            // Prepare the URL with query parameters
+            var url = '/Admin/SetDiscount?title=' + encodeURIComponent(bookTitle) +
+                '&discountPrice=' + encodeURIComponent(discountPrice) +
+                '&discountPeriod=' + encodeURIComponent(discountPeriod);
+
+            // Redirect the user to the URL
+            window.location.href = url;
+        }
+        else {
+            alert("Invalid discount price.");
+        }
+    }
+
+    // Function to toggle the visibility of the discount end date field based on discount price input
+    function toggleDiscountFields() {
+        var discountPrice = document.getElementById('discountPrice').value;
+        var discountFields = document.getElementById('discountFields');
+
+        if (discountPrice && discountPrice < parseFloat(document.getElementById('currentPrice').value)) {
+            discountFields.style.display = 'block'; // Show discount end date field if a valid discount price is entered
+        } else {
+            discountFields.style.display = 'none'; // Hide discount end date field if discount price is not valid
+        }
+    }
+
+</script>
+<!-- Modal to choose formats when buying books -->
+<div class="modal fade" id="formatSelectionModal" tabindex="-1" aria-labelledby="formatSelectionLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="formatSelectionLabel">Select Format</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <input type="hidden" id="modalBookTitle">
+                    <input type="hidden" id="modalBookAuthor">
+                    <input type="hidden" id="modalAction">
+                    <label for="format">Choose a format:</label>
+                    <select class="form-control" id="format" required>
+                        <option value="ePub">ePub</option>
+                        <option value="f2b">f2b</option>
+                        <option value="mobi">MOBI</option>
+                        <option value="PDF">PDF</option>
+                    </select>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitFormat()">Add to Cart</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Waiting List Modal -->
+<div class="modal fade" id="waitingListModal" tabindex="-1" aria-labelledby="waitingListModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="waitingListModalLabel">Join Waiting List</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Unfortunately, all borrow copies are currently unavailable. Would you like to join the waiting list for this book?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="joinWaitingListButton">Join Waiting List</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- JavaScript logic for format option -->
+<script>
+    function openFormatModal(title, author, typeofaction) {
+        // Set the title, author, and action in the hidden input fields
+        document.getElementById('modalBookTitle').value = title;
+        document.getElementById('modalBookAuthor').value = author;
+        document.getElementById('modalAction').value = typeofaction;
+
+        // Open the modal
+        var myModal = new bootstrap.Modal(document.getElementById('formatSelectionModal'), {
+            keyboard: true
+        });
+        myModal.show();
+
+        // Add an event listener to remove the backdrop when the modal is hidden
+        // Ensure proper cleanup when the modal is hidden
+        var modalElement = document.getElementById('formatSelectionModal');
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            document.body.classList.remove('modal-open'); // Remove the 'modal-open' class
+            var backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove(); // Remove the backdrop element only if it exists
+            }
+            // Restore scrolling
+            document.body.style.overflow = '';
+        });
+    }
+
+    function checkBorrowAvailability(title, author) {
+        return fetch(`/ShoppingCart/CheckBorrowAvailability?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}`, {
+            method: 'GET',
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error checking borrow availability');
+                }
+                return response.json(); // Parse the JSON response
+            })
+            .then(data => data.isAvailable) // Return the availability status
+            .catch(error => {
+                console.error('Error:', error);
+                return false; // Return false if an error occurs
+            });
+    }
+
+    // Function to handle the form submission
+    function submitFormat() {
+        var title = document.getElementById('modalBookTitle').value;
+        var author = document.getElementById('modalBookAuthor').value;
+        var typeofaction = document.getElementById('modalAction').value;
+        var format = document.getElementById('format').value;
+
+        // Check if the action is 'Borrow' before making the server request
+        if (typeofaction === "Borrow") {
+            // Use the intermediary function to check borrow availability
+            checkBorrowAvailability(title, author).then(isAvailable => {
+                if (isAvailable) {
+                    // If borrow copies are available, proceed with adding to cart
+                    window.location.href = '/ShoppingCart/AddToCart?title=' + encodeURIComponent(title) +
+                        '&author=' + encodeURIComponent(author) +
+                        '&format=' + encodeURIComponent(format) +
+                        '&typeofaction=' + encodeURIComponent(typeofaction);
+                } else {
+                    // If borrow copies are not available, show the modal to join the waiting list
+                    var waitingListModal = new bootstrap.Modal(document.getElementById('waitingListModal'));
+                    waitingListModal.show();
+                }
+            }).catch(error => {
+                alert("Error checking borrow availability.");
+            });
+        } else {
+            // If action is 'Buy', just add to cart without any check
+            window.location.href = '/ShoppingCart/AddToCart?title=' + encodeURIComponent(title) +
+                '&author=' + encodeURIComponent(author) +
+                '&format=' + encodeURIComponent(format) +
+                '&typeofaction=' + encodeURIComponent(typeofaction);
+        }
+    }
+
+    // Event listener for the "Join Waiting List" button
+    document.addEventListener("DOMContentLoaded", function () {
+        const joinWaitingListButton = document.getElementById("joinWaitingListButton");
+
+        joinWaitingListButton.addEventListener("click", function () {
+            const title = document.getElementById("modalBookTitle").value;
+
+            fetch("/WaitingList/Add", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ title }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to join the waiting list.");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert("You have been successfully added to the waiting list.");
+                        const modalInstance = bootstrap.Modal.getInstance(document.getElementById("waitingListModal"));
+                        modalInstance.hide();
+                    } else {
+                        alert(data.message || "Could not add to the waiting list. Please try again.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error joining the waiting list:", error);
+                    alert("An error occurred while trying to join the waiting list. Please try again.");
+                });
+        });
+    });
+
+</script>
