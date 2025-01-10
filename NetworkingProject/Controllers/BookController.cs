@@ -97,7 +97,28 @@ namespace NetworkingProject.Controllers
             }
         }
 
+        // Action for the search results page
+        [HttpGet]
+        public ActionResult Search(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return RedirectToAction("Index");
+            }
 
+            // Convert query to lowercase for case-insensitive search
+            query = query.ToLower();
+
+            // Get books from database where title contains the search query
+            List<BookModel> books = _bookRepository.GetAllBooks()
+                .Where(b => b.Title.ToLower().Contains(query) ||
+                            b.Author.ToLower().Contains(query) ||
+                            b.Publisher.ToLower().Contains(query))
+                .ToList();
+
+            // Pass the books to the view
+            return View(books);
+        }
 
     }
 

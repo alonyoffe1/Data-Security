@@ -13,7 +13,7 @@ namespace AudioBookStore.Controllers
 
         public HomePageController()
         {
-            string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
+            string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
             _bookRepository = new BookRepository(connectionString);
         }
 
@@ -24,32 +24,6 @@ namespace AudioBookStore.Controllers
             return RedirectToAction("Index", "Book");
         }
 
-        public ActionResult RedirectToBooks()
-        {
-            return RedirectToAction("Index", "Catalog");  // Redirects to the Books controller Index action
-        }
 
-        // Action for the search results page
-        [HttpGet]
-        public ActionResult Search(string query)
-        {
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                return RedirectToAction("Index");
-            }
-
-            // Convert query to lowercase for case-insensitive search
-            query = query.ToLower();
-
-            // Get books from database where title contains the search query
-            List<BookModel> books = _bookRepository.GetAllBooks()
-                .Where(b => b.Title.ToLower().Contains(query) ||
-                            b.Author.ToLower().Contains(query) ||
-                            b.Publisher.ToLower().Contains(query))
-                .ToList();
-
-            // Pass the books to the view
-            return View(books);
-        }
     }
 }
