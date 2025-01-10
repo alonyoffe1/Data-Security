@@ -448,7 +448,8 @@
                     <!-- Action Buttons -->
                     <div class="d-flex justify-content-between">
                         <button class="btn btn-primary" id="updateUserBtn" onclick="openUpdateUserModal()">Update</button>
-                        <button class="btn btn-warning" id="suspendUserBtn" onclick="suspendUser()">Suspend</button>
+                        <button class="btn btn-warning" id="suspendUserBtn" onclick="toggleUserSuspension()">Suspend</button>
+
                         <button class="btn btn-danger" id="deleteUserBtn" onclick="deleteUser()">Delete</button>
                     </div>
                 </div>
@@ -514,7 +515,6 @@
             </div>
         </div>
     </div>
-
     <script>
         function openManageUserModal() {
             // Show the manage user modal
@@ -573,7 +573,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    document.getElementById('email').value = email; 
+                    document.getElementById('email').value = email;
                     document.getElementById('firstName').value = data.firstName || "";
                     document.getElementById('lastName').value = data.lastName || "";
                     document.getElementById('phoneNumber').value = data.phoneNumber || "";
@@ -586,7 +586,7 @@
                 });
         }
         function saveNewDetails() {
-            const form = document.getElementById('updateUserForm'); 
+            const form = document.getElementById('updateUserForm');
             const email = form.email.value.trim();
             const firstName = form.firstName.value.trim();
             const lastName = form.lastName.value.trim();
@@ -634,6 +634,44 @@
                     console.error('Error saving user details:', error);
                     alert("An error occurred while saving user details.");
                 });
+        }
+
+        function toggleUserSuspension() {
+            const email = document.getElementById('userEmail').value.trim();
+
+            if (!email) {
+                alert("Please enter an email address.");
+                return;
+            }
+
+            // Check if email exists before proceeding
+            checkEmailExistence(email).then(emailExists => {
+                if (emailExists) {
+                    // If email exists, toggle suspension status
+                    fetch(`/Accounts/ToggleUserSuspension?email=${encodeURIComponent(email)}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message || "User suspension status updated successfully.");
+                            } else {
+                                alert(data.message || "Failed to update suspension status.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error toggling suspension status:", error);
+                            alert("An error occurred while updating the suspension status.");
+                        });
+                } else {
+                    alert("The email does not exist. Please enter a valid email.");
+                }
+            }).catch(error => {
+                alert("An error occurred while checking the email.");
+            });
         }
     </script>
 </body>

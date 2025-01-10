@@ -1,7 +1,8 @@
-﻿@model IEnumerable<NetworkingProject.Models.LibraryModel>
+﻿@model List<NetworkingProject.Models.BookModel>
 
 @{
     ViewData["Title"] = "My Library";
+    var userEmail = (string)Session["UserEmail"]; // Ensure the user's email is available
 }
 
 <head>
@@ -12,50 +13,74 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 
-<div class="container my-5">
-    <h1 class="text-center mb-4 fw-bold">My Library</h1>
-    <div class="row g-4">
-        @foreach (var book in Model)
+<body>
+    <div class="container my-5">
+        <h1 class="text-center mb-4 fw-bold">Your Library</h1>
+
+        @if (Model == null || !Model.Any())
         {
-            <div class="col-md-3 d-flex justify-content-center">
-                <div class="card border-0 shadow-sm" style="width: 250px;">
-                    <div class="card-body text-center">
-                        <h5 class="fw-bold mb-2">@book.Title</h5>
-                        <p class="text-muted mb-1">by @book.Author</p>
-                        <p class="mb-1"><strong>Publisher:</strong> @book.Publisher</p>
-                        <p class="mb-1"><strong>Genre:</strong> @book.Genre</p>
-                        <p class="mb-1"><strong>Age Limit:</strong> @book.AgeLim+</p>
-                        <p class="mb-2">
-                            <strong>Status:</strong>
-                            @if (book.Borrowed)
-                            {
-                                <span class="text-danger">Borrowed</span>
-                            }
-                            else
-                            {
-                                <span class="text-success">Available</span>
-                            }
-                        </p>
-                        <div class="d-flex flex-column gap-2">
-                            @if (!book.Borrowed)
-                            {
-                                <a href="@Url.Action("BorrowBook", "Library", new { title = book.Title })"
-                                   class="btn btn-primary btn-sm px-4 fw-bold">
-                                    Borrow
-                                </a>
-                            }
-                            @if (ViewBag.IsAdmin)
-                            {
-                                <a href="@Url.Action("DeleteBook", "Library", new { title = book.Title })"
-                                   class="btn btn-danger btn-sm px-4 fw-bold"
-                                   onclick="return confirm('Are you sure you want to delete this book?');">
-                                    Delete
-                                </a>
-                            }
+            <p class="text-center text-muted fs-4">Your library is empty. Start buying or borrowing books!</p>
+        }
+        else
+        {
+            <div class="container my-5">
+                <div class="d-flex flex-wrap">
+                    @foreach (var book in Model)
+                    {
+                        <div class="d-flex justify-content-center mb-4" style="width: 20%;">
+                            <div class="card border-0 shadow-sm" style="width: 200px;">
+
+                                <!-- Placeholder for Book Image -->
+                                <img src="https://via.placeholder.com/150x200" class="card-img-top" alt="@book.Title" />
+
+                                <div class="card-body text-center">
+                                    <h6 class="text-danger fw-bold mb-1">@book.SelectedAction</h6>
+                                    <p class="card-title fw-bold mb-1">@book.Title</p>
+                                    <p class="card-text text-muted mb-2">Format: @book.SelectedFormat</p>
+                                    @if (book.SelectedAction == "Borrow")
+                                    {
+
+                                        var libraryController = new NetworkingProject.Controllers.LibraryController();
+                                        var daysRemaining = libraryController.GetDaysUntilReturn(userEmail, book.Title);
+
+                                        if (daysRemaining.HasValue && daysRemaining.Value <= 0)
+                                        {
+                                            // Skip rendering this book as the borrow time is over
+                                            continue;
+                                        }
+
+
+                                        <p class="card-text text-muted mb-2">
+                                            Time Remaining:
+                                            @if (daysRemaining.HasValue)
+                                            {
+                                                @($"{daysRemaining} days left")
+                                            }
+                                            else
+                                            {
+                                                @("Unknown")
+                                            }
+                                        </p>
+                                    }
+                                    @if (book.SelectedAction == "Buy")
+                                    {
+                                        <a href="@Url.Action("RemoveFromLibrary", "Library", new { bookTitle = book.Title })"
+                                           class="btn btn-danger btn-sm fw-bold">
+                                            Remove
+                                        </a>
+                                    }
+                                    <div class="mt-2">
+                                        <a href="@Url.Action("DownloadBook", "Library", new { bookTitle = book.Title, format = book.SelectedFormat })"
+                                           class="btn btn-primary btn-sm fw-bold">
+                                            Download
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    }
                 </div>
             </div>
         }
     </div>
-</div>
+</body>

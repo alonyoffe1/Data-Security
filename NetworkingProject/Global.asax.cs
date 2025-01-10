@@ -33,9 +33,9 @@ namespace NetworkingProject
 
                     // Query to get users with due dates within 5 days
                     string query = @"
-                    SELECT UserEmail, BookTitle, DueDate
-                    FROM BorrowedBooks
-                    WHERE DueDate BETWEEN GETDATE() AND DATEADD(DAY, 5, GETDATE())";
+                        SELECT UserEmail, BookTitle, DueDate
+                        FROM BorrowedBooks
+                        WHERE DueDate BETWEEN GETDATE() AND DATEADD(DAY, 5, GETDATE())";
 
                     SqlCommand command = new SqlCommand(query, connection);
                     SqlDataReader reader = command.ExecuteReader();
@@ -45,14 +45,25 @@ namespace NetworkingProject
                         string userEmail = reader["UserEmail"].ToString();
                         string bookTitle = reader["BookTitle"].ToString();
                         DateTime returnDate = Convert.ToDateTime(reader["DueDate"]);
-                        // Calculate how many days are left for the due date
-                        int daysLeft = (returnDate - DateTime.Now).Days;
 
-                        // Log how many days are left
-                        System.Diagnostics.Debug.WriteLine($"User {userEmail} has {daysLeft} days left to return the book '{bookTitle}'.");
+                        var emailService = new EmailService();
+                        string subject = "Borrow time is about to run out";
+                        string body = $@"
+                                <html>
+                                <body>
+                                        <h2>Borrow time is about to run out!</h2>
+                                        <p>Dear Customer,</p>
+                                        <p>We would like to notify you that your borrow period for {bookTitle} will be over in 5 days</p>
+                                        <p>Make sure to finish the book beforehand!</p>
+                                        <p>Otherwise you can always Buy the book or borrow it again!</p>
 
-                        // Send email notification (example)
-                        SendNotification(userEmail, bookTitle, returnDate);
+                                        <p>Best regards,</p>
+                                        <p>Your Bookstore Team</p>
+                                </body>
+                                </html>";
+
+                        // Send the email
+                        emailService.SendEmail(userEmail, subject, body);
                     }
 
                     reader.Close();
@@ -62,31 +73,6 @@ namespace NetworkingProject
                     // Handle error (optional logging)
                     Console.WriteLine("Error: " + ex.Message);
                 }
-            }
-        }
-
-        // Method to send the email notifications
-        public void SendNotification(string userEmail, string bookTitle, DateTime returnDate)
-        {
-            string subject = "Reminder: Your Borrowed Book is Due Soon!";
-            string body = $"Dear user,\n\n" +
-                          $"This is a reminder that the book '{bookTitle}' you borrowed is due for return on {returnDate.ToString("MMMM dd, yyyy")}, " +
-                          $"which is in 5 days. Please make sure to return it on time.\n\n" +
-                          $"Best regards,\nYour Library Team";
-
-            try
-            {
-                SmtpClient smtpClient = new SmtpClient("smtp.example.com")
-                {
-                    Port = 587,
-                    Credentials = new System.Net.NetworkCredential("your-email@example.com", "your-email-password"),
-                    EnableSsl = true,
-                };
-                smtpClient.Send("your-email@example.com", userEmail, subject, body);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Email sending failed: " + ex.Message);
             }
         }
     }

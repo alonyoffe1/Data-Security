@@ -25,7 +25,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
-
+    <style>
+        .alert {
+            display: block !important; /* Force the alert to be visible */
+            opacity: 1 !important; /* Ensure it's fully visible */
+            visibility: visible !important; /* Ensure it's not hidden */
+            margin-bottom: 20px; /* Add some space below the alert */
+        }
+    </style>
 
 </head>
 
@@ -37,7 +44,13 @@
             <p>Enter email address and password to enter.</p>
         </div>
 
-
+        @if (TempData["AlertMessage"] != null)
+        {
+            <div class="alert alert-@TempData["AlertType"] alert-dismissible fade show" role="alert">
+                @TempData["AlertMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
         <form id="login-form" action="/Accounts/SignIn" method="post" enctype="multipart/form-data">
 
             <div class="form-group">

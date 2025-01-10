@@ -7,6 +7,10 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using static System.Collections.Specialized.BitVector32;
+using System.Net;
+using System.Net.Mail;
+using System.Security.Policy;
+using System.Web.Helpers;
 
 namespace NetworkingProject.Controllers
 {
@@ -66,6 +70,34 @@ namespace NetworkingProject.Controllers
             {
                 // Log or handle the error
                 Console.WriteLine($"Error in AddToCart: {ex.Message}");
+                return RedirectToAction("Error");
+            }
+        }
+
+        public ActionResult RemoveFromCartSession(string title)
+        {
+            try
+            {
+                // Retrieve the cart session
+                var cart = Session["Cart"] as List<BookModel>;
+
+                if (cart != null)
+                {
+                    // Find and remove the book with the given title
+                    var bookToRemove = cart.FirstOrDefault(b => b.Title == title);
+                    if (bookToRemove != null)
+                    {
+                        cart.Remove(bookToRemove);
+                        Session["Cart"] = cart; // Update the session
+                    }
+                }
+
+                // Redirect back to the shopping cart page
+                return RedirectToAction("CartPageWithCart");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in RemoveFromCartSession: {ex.Message}");
                 return RedirectToAction("Error");
             }
         }
@@ -165,6 +197,7 @@ namespace NetworkingProject.Controllers
                 // Simulate borrowed books availability check
                 var borrowedBooks = (List<BookModel>)Session["BorrowedBooks"] ?? new List<BookModel>();
                 var unavailableBooks = new List<BookModel>();
+                var cart = Session["Cart"] as List<BookModel> ?? new List<BookModel>();
 
                 foreach (var book in borrowedBooks.ToList()) // Using ToList() to avoid modification during iteration
                 {
@@ -198,26 +231,56 @@ namespace NetworkingProject.Controllers
                     return Json(new { success = false, message = "Invalid card details" }, JsonRequestBehavior.AllowGet);
                 }
 
-            // Simulate payment processing
-            bool isPaymentSuccessful = SimulatePaymentProcessing(ccNumber, expiryDate, cvc);
-            if (isPaymentSuccessful)
-            {
-                // Instantiate WaitingListController to call AddToBorrowedBooks
-                var waitingListController = new WaitingListController();
-
-                // Add each borrowed book to the BorrowedBooks table
-                string userEmail = (string)Session["UserEmail"];
-                foreach (var book in borrowedBooks)
+                // Simulate payment processing
+                bool isPaymentSuccessful = SimulatePaymentProcessing(ccNumber, expiryDate, cvc);
+                if (isPaymentSuccessful)
                 {
-                    // Call the AddToBorrowedBooks method
-                    var result = waitingListController.AddToBorrowedBooks(userEmail, book.Title);
+                    // Instantiate WaitingListController to call AddToBorrowedBooks
+                    var waitingListController = new WaitingListController();
+
+                    // Add each borrowed book to the BorrowedBooks table
+                    string userEmail = (string)Session["UserEmail"];
+                    foreach (var book in borrowedBooks)
+                    {
+                        // Call the AddToBorrowedBooks method
+                        var result = waitingListController.AddToBorrowedBooks(userEmail, book.Title);
+                    }
+                    var libraryController = new LibraryController();
+                    libraryController.AddToLibrary(userEmail, cart, borrowedBooks);
+                    // Send email notification to the user
+                    var emailService = new EmailService();
+                    string subject = "Reset Your Password";
+                    string body = $@"
+                                <html>
+                                <body>
+                                        <h2>Thank You for Your Purchase!</h2>
+                                        <p>Dear Customer,</p>
+                                        <p>We're pleased to inform you that your purchase has been processed successfully. The following books have been added to your library:</p>
+                                        <p>You can now access the books you purchased in your library and start reading right away!</p>
+                                        <p>If you have any questions or need further assistance, feel free to contact our support team.</p>
+
+                                        <p>Best regards,</p>
+                                        <p>Your Bookstore Team</p>
+                                </body>
+                                </html>";
+
+                    // Send the email
+                    emailService.SendEmail(userEmail, subject, body);
+                    return Json(new { success = true, message = "Payment processed successfully" }, JsonRequestBehavior.AllowGet);
                 }
-                return Json(new { success = true, message = "Payment processed successfully" }, JsonRequestBehavior.AllowGet);
+                else
+                {
+                    return Json(new { success = false, message = "Payment failed. Please try again." }, JsonRequestBehavior.AllowGet);
+                }
+
             }
-            else
+            catch (Exception ex)
             {
-                return Json(new { success = false, message = "Payment failed. Please try again." }, JsonRequestBehavior.AllowGet);
+                // Log the exception details and return an error response
+                // You can replace this with actual logging if necessary
+                return Json(new { success = false, message = "An error occurred while processing your request. Please try again." }, JsonRequestBehavior.AllowGet);
             }
+
         }
 
         // Simulated payment processing logic
@@ -258,5 +321,7 @@ namespace NetworkingProject.Controllers
                 return false;
             }
         }
+
+       
     }
 }

@@ -50,6 +50,11 @@ namespace NetworkingProject.Controllers
                             {
                                 return RedirectToAction("Index", "HomePage");
                             }
+                            else if (role == "Suspended")
+                            {
+                                TempData["AlertMessage"] = "Your account has been suspended. Please contact support for assistance.";
+                                TempData["AlertType"] = "warning";
+                            }
                             else
                             {
                                 ModelState.AddModelError("", "Invalid role.");
@@ -274,6 +279,57 @@ namespace NetworkingProject.Controllers
                 return Json(new { success = false, message = "An error occurred while updating user details." }, JsonRequestBehavior.AllowGet);
             }
         }
+
+
+        [HttpPost]
+        public JsonResult ToggleUserSuspension(string email)
+        {
+            try
+            {
+                string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    // Query to check if the user exists
+                    var checkUserQuery = "SELECT Role FROM Users WHERE Email = @Email";
+                    using (var checkCommand = new SqlCommand(checkUserQuery, connection))
+                    {
+                        checkCommand.Parameters.AddWithValue("@Email", email);
+
+                        var role = checkCommand.ExecuteScalar() as string;
+
+                        if (role == null)
+                        {
+                            // If no user is found, return a failure response
+                            return Json(new { success = false, message = "User not found." });
+                        }
+
+                        // Determine the new role
+                        var newRole = role == "Suspended" ? "User" : "Suspended";
+
+                        // Update the user's role
+                        var updateRoleQuery = "UPDATE Users SET Role = @NewRole WHERE Email = @Email";
+                        using (var updateCommand = new SqlCommand(updateRoleQuery, connection))
+                        {
+                            updateCommand.Parameters.AddWithValue("@NewRole", newRole);
+                            updateCommand.Parameters.AddWithValue("@Email", email);
+                            updateCommand.ExecuteNonQuery();
+                        }
+
+                        return Json(new { success = true, message = $"User role updated to {newRole}." });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception and return an error response
+                Console.WriteLine($"Error in ToggleUserSuspension: {ex.Message}");
+                return Json(new { success = false, message = "An error occurred while processing the request." });
+            }
+        }
+
 
     }
 }

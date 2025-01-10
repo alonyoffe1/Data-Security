@@ -46,7 +46,7 @@
                                                 }
                                             </span>
                                         </div>
-                                        <a href="@Url.Action("RemoveFromCart", "ShoppingCart", new { title = book.Title })"
+                                        <a href="@Url.Action("RemoveFromCartSession", "ShoppingCart", new { title = book.Title })"
                                            class="btn btn-danger btn-sm fw-bold">
                                             Remove
                                         </a>
@@ -57,9 +57,17 @@
                     }
                 </div>
             </div>
-            <!-- "Buy Now" button -->
+            <!-- Return to Shopping and Buy Now buttons -->
             <div class="text-center mt-4">
-                <button class="btn btn-success btn-lg" onclick="checkoutAndShowModal()">Buy Now</button>
+                <div class="d-flex justify-content-center align-items-center">
+                    <!-- Return to Shopping Button -->
+                    <a href="@Url.Action("Index", "HomePage")" class="btn btn-secondary btn-lg me-3">
+                        Return to Shopping
+                    </a>
+
+                    <!-- Buy Now Button -->
+                    <button class="btn btn-success btn-lg" onclick="checkoutAndShowModal()">Buy Now</button>
+                </div>
             </div>
             <!-- Summary Modal -->
             <div class="modal fade" id="summaryModal" tabindex="-1" aria-labelledby="summaryModalLabel" aria-hidden="true">
