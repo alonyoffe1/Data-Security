@@ -291,8 +291,11 @@
 
         <!-- Search form -->
         <div class="search-container">
-            <form action="/HomePage/Search" method="get">
-                <input type="text" name="query" placeholder="Search for an audiobook" />
+            <form action="@Url.Action("Search", "HomePage")" method="get">
+                <input type="text"
+                       name="query"
+                       id="searchInput"
+                       placeholder="Search for an audiobook" />
                 <button type="submit">Search</button>
             </form>
         </div>
