@@ -21,7 +21,7 @@ namespace NetworkingProject.Controllers
 
         public ShoppingCartController() //initializes book controller for methods to use
         {
-            string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
+            string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
             _bookRepository = new BookRepository(connectionString);
         }
 

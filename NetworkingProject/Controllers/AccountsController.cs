@@ -24,7 +24,7 @@ namespace NetworkingProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
+                string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
 
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {

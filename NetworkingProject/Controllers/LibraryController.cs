@@ -20,7 +20,7 @@ namespace NetworkingProject.Controllers
                 return RedirectToAction("Login", "Account"); // Redirect to login if the user is not logged in
             }
 
-            string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
+            string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
             List<BookModel> libraryBooks = new List<BookModel>();
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -254,7 +254,7 @@ namespace NetworkingProject.Controllers
                 return Json(new { success = false, message = "Invalid parameters" });
             }
 
-            string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
+            string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
 
             try
             {
