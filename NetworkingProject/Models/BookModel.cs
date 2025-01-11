@@ -22,5 +22,7 @@ namespace NetworkingProject.Models
         public string SelectedFormat { get; set; }
         public string SelectedAction { get; set; }
         public string Picture { get; set; }
+        public int Rating { get; set; }
+        public string Review { get; set; }
     }
 }

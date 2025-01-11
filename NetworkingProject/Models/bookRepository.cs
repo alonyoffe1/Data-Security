@@ -50,7 +50,11 @@ namespace NetworkingProject.Models
                             PublishingYear = Convert.ToInt32(reader["PublishingYear"]),
                             Genre = reader["Genre"].ToString(),
                             AgeLim = Convert.ToInt32(reader["AgeLim"]),
-                            Picture = reader["Picture"].ToString()
+                            Picture = reader["Picture"].ToString(),
+                            Rating = reader["Rating"] != DBNull.Value
+                            ? Convert.ToInt32(reader["Rating"])
+                            : 0,
+                            Review = reader["Review"]?.ToString()
                         });
                     }
                 }
@@ -94,6 +98,10 @@ namespace NetworkingProject.Models
                             PublishingYear = Convert.ToInt32(reader["PublishingYear"]),
                             Genre = reader["Genre"].ToString(),
                             AgeLim = Convert.ToInt32(reader["AgeLim"]),
+                            Rating = reader["Rating"] != DBNull.Value
+                            ? Convert.ToInt32(reader["Rating"])
+                            : 0,
+                            Review = reader["Review"]?.ToString()
                         };
                     }
                 }
@@ -181,7 +189,7 @@ namespace NetworkingProject.Models
             Failure
         }
 
-        public AddBookResult AddNewBook(string title, string author, string publisher, decimal price, int year, string genre, int age)
+        public AddBookResult AddNewBook(string title, string author, string publisher, decimal price, int year, string genre, int age, int rating, string review)
         {
             try
             {
@@ -189,8 +197,8 @@ namespace NetworkingProject.Models
                 {
                     string checkQuery = "SELECT COUNT(*) FROM Books WHERE Title = @Title AND Author = @Author";
                     string insertQuery = @"
-                        INSERT INTO Books (Title, Author, Publisher, Price, PublishingYear, Genre, AgeLim, BorrowCopies)
-                        VALUES (@Title, @Author, @Publisher, @Price, @Year, @Genre, @Age, 3)";
+                        INSERT INTO Books (Title, Author, Publisher, Price, PublishingYear, Genre, AgeLim, BorrowCopies, Review, Rating)
+                        VALUES (@Title, @Author, @Publisher, @Price, @Year, @Genre, @Age, 3, @Review, @Rating)";
 
                     connection.Open();
 
@@ -215,6 +223,7 @@ namespace NetworkingProject.Models
                         insertCommand.Parameters.AddWithValue("@Year", year);
                         insertCommand.Parameters.AddWithValue("@Genre", genre);
                         insertCommand.Parameters.AddWithValue("@Age", age);
+                        insertCommand.Parameters.AddWithValue("@Review", review);
 
                         int rowsAffected = insertCommand.ExecuteNonQuery();
                         return rowsAffected > 0 ? AddBookResult.Success : AddBookResult.Failure;
