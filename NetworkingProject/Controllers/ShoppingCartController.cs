@@ -21,7 +21,7 @@ namespace NetworkingProject.Controllers
 
         public ShoppingCartController() //initializes book controller for methods to use
         {
-            string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
+            string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
             _bookRepository = new BookRepository(connectionString);
         }
 
@@ -189,99 +189,122 @@ namespace NetworkingProject.Controllers
         }
 
         [HttpPost]
-        [RequireHttps] // Ensures this method is only accessible over HTTPS
+        [RequireHttps]
         public ActionResult ProcessPayment(string ccNumber, string expiryDate, string cvc)
         {
             try
             {
-                // Simulate borrowed books availability check
-                var borrowedBooks = (List<BookModel>)Session["BorrowedBooks"] ?? new List<BookModel>();
-                var unavailableBooks = new List<BookModel>();
-                var cart = Session["Cart"] as List<BookModel> ?? new List<BookModel>();
-
-                foreach (var book in borrowedBooks.ToList()) // Using ToList() to avoid modification during iteration
+                string userEmail = (string)Session["UserEmail"];
+                if (string.IsNullOrEmpty(userEmail))
                 {
-                    // Perform a server-side check for availability
-                    bool isAvailable = _bookRepository.CheckIfBorrowableCopiesAvailable(book.Title, book.Author);
+                    return Json(new { success = false, message = "User not logged in" });
+                }
 
-                    if (!isAvailable)
+                // Validate cart exists
+                var cart = Session["Cart"] as List<BookModel>;
+                var borrowedBooks = Session["BorrowedBooks"] as List<BookModel>;
+
+                if ((cart == null || !cart.Any()) && (borrowedBooks == null || !borrowedBooks.Any()))
+                {
+                    return Json(new { success = false, message = "Cart is empty" });
+                }
+
+                // Process payment
+                if (!SimulatePaymentProcessing(ccNumber, expiryDate, cvc))
+                {
+                    return Json(new { success = false, message = "Payment failed. Please check your card details." });
+                }
+
+                // Add books to library
+                var libraryController = new LibraryController();
+                var result = libraryController.AddToLibrary(userEmail, cart, borrowedBooks);
+
+                // Check the result
+                if (result is JsonResult jsonResult && jsonResult.Data != null)
+                {
+                    dynamic resultData = jsonResult.Data;
+                    if (resultData.success == true)
                     {
-                        unavailableBooks.Add(book);
-                        borrowedBooks.Remove(book); // Remove unavailable book from the session
+                        // Process borrowed books if any
+                        if (borrowedBooks != null && borrowedBooks.Any())
+                        {
+                            var waitingListController = new WaitingListController();
+                            foreach (var book in borrowedBooks)
+                            {
+                                waitingListController.AddToBorrowedBooks(userEmail, book.Title);
+                            }
+                        }
+
+                        // Send confirmation email
+                        try
+                        {
+                            SendConfirmationEmail(userEmail, cart, borrowedBooks);
+                        }
+                        catch (Exception emailEx)
+                        {
+                            Console.WriteLine($"Email error: {emailEx.Message}");
+                        }
+
+                        // Clear cart sessions
+                        Session["Cart"] = null;
+                        Session["BorrowedBooks"] = null;
+
+                        return Json(new
+                        {
+                            success = true,
+                            message = "Payment successful and books added to your library"
+                        });
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failed to add books to library: {resultData.message}");
                     }
                 }
 
-                // Update the session with remaining borrowed books
-                Session["BorrowedBooks"] = borrowedBooks;
-
-                // If any unavailable books were found, return an error
-                if (unavailableBooks.Any())
+                return Json(new
                 {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Some borrowed books are no longer available.",
-                        unavailableBooks = unavailableBooks.Select(b => new { b.Title, b.Author }).ToList()
-                    });
-                }
-
-                // Validate the input
-                if (string.IsNullOrWhiteSpace(ccNumber) || string.IsNullOrWhiteSpace(expiryDate) || string.IsNullOrWhiteSpace(cvc))
-                {
-                    return Json(new { success = false, message = "Invalid card details" }, JsonRequestBehavior.AllowGet);
-                }
-
-                // Simulate payment processing
-                bool isPaymentSuccessful = SimulatePaymentProcessing(ccNumber, expiryDate, cvc);
-                if (isPaymentSuccessful)
-                {
-                    // Instantiate WaitingListController to call AddToBorrowedBooks
-                    var waitingListController = new WaitingListController();
-
-                    // Add each borrowed book to the BorrowedBooks table
-                    string userEmail = (string)Session["UserEmail"];
-                    foreach (var book in borrowedBooks)
-                    {
-                        // Call the AddToBorrowedBooks method
-                        var result = waitingListController.AddToBorrowedBooks(userEmail, book.Title);
-                    }
-                    var libraryController = new LibraryController();
-                    libraryController.AddToLibrary(userEmail, cart, borrowedBooks);
-                    // Send email notification to the user
-                    var emailService = new EmailService();
-                    string subject = "Reset Your Password";
-                    string body = $@"
-                                <html>
-                                <body>
-                                        <h2>Thank You for Your Purchase!</h2>
-                                        <p>Dear Customer,</p>
-                                        <p>We're pleased to inform you that your purchase has been processed successfully. The following books have been added to your library:</p>
-                                        <p>You can now access the books you purchased in your library and start reading right away!</p>
-                                        <p>If you have any questions or need further assistance, feel free to contact our support team.</p>
-
-                                        <p>Best regards,</p>
-                                        <p>Your Bookstore Team</p>
-                                </body>
-                                </html>";
-
-                    // Send the email
-                    emailService.SendEmail(userEmail, subject, body);
-                    return Json(new { success = true, message = "Payment processed successfully" }, JsonRequestBehavior.AllowGet);
-                }
-                else
-                {
-                    return Json(new { success = false, message = "Payment failed. Please try again." }, JsonRequestBehavior.AllowGet);
-                }
-
+                    success = false,
+                    message = "Failed to add books to library. Please try again."
+                });
             }
             catch (Exception ex)
             {
-                // Log the exception details and return an error response
-                // You can replace this with actual logging if necessary
-                return Json(new { success = false, message = "An error occurred while processing your request. Please try again." }, JsonRequestBehavior.AllowGet);
+                Console.WriteLine($"Error in ProcessPayment: {ex.Message}");
+                return Json(new { success = false, message = "An error occurred during processing" });
+            }
+        }
+
+        private void SendConfirmationEmail(string userEmail, List<BookModel> cart, List<BookModel> borrowedBooks)
+        {
+            var emailService = new EmailService();
+            var subject = "Your Book Purchase Confirmation";
+
+            var bodyBuilder = new System.Text.StringBuilder();
+            bodyBuilder.AppendLine("<h2>Thank you for your purchase!</h2>");
+            bodyBuilder.AppendLine("<h3>Your books:</h3><ul>");
+
+            if (cart != null)
+            {
+                foreach (var book in cart)
+                {
+                    bodyBuilder.AppendLine($"<li>{book.Title} by {book.Author} ({book.SelectedFormat}) - {book.SelectedAction}</li>");
+                }
             }
 
+            if (borrowedBooks != null)
+            {
+                foreach (var book in borrowedBooks)
+                {
+                    bodyBuilder.AppendLine($"<li>{book.Title} by {book.Author} ({book.SelectedFormat}) - Borrowed</li>");
+                }
+            }
+
+            bodyBuilder.AppendLine("</ul>");
+            bodyBuilder.AppendLine("<p>You can access your books in your library now.</p>");
+
+            emailService.SendEmail(userEmail, subject, bodyBuilder.ToString());
         }
+
 
         // Simulated payment processing logic
         private bool SimulatePaymentProcessing(string ccNumber, string expiryDate, string cvc)

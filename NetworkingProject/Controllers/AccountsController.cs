@@ -24,7 +24,7 @@ namespace NetworkingProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ToString();
+                string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
 
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
@@ -33,44 +33,59 @@ namespace NetworkingProject.Controllers
                         connection.Open();
 
                         // Query to check if the email and password match
-                        string query = "SELECT Role FROM Users WHERE Email = @Email AND Password = @Password";
+                        string query = "SELECT Role FROM NetProj_Web_db.dbo.Users WHERE Email = @Email AND Password = @Password";
                         using (SqlCommand cmd = new SqlCommand(query, connection))
                         {
                             cmd.Parameters.AddWithValue("@Email", model.Email);
                             cmd.Parameters.AddWithValue("@Password", model.Password);
 
-                            string role = (string)cmd.ExecuteScalar(); //retrieve the role as a string from the db
+                            object result = cmd.ExecuteScalar();
+
+                            if (result == null)
+                            {
+                                // No user found with matching email and password
+                                TempData["AlertMessage"] = "Invalid email or password.";
+                                TempData["AlertType"] = "danger";
+                                return View(model);
+                            }
+
+                            string role = result.ToString();
                             Session["UserEmail"] = model.Email;
                             Session["UserRole"] = role;
-                            if (role == "Admin")
+
+                            switch (role)
                             {
-                                return RedirectToAction("Index", "HomePage");
-                            }
-                            else if (role == "User")
-                            {
-                                return RedirectToAction("Index", "HomePage");
-                            }
-                            else if (role == "Suspended")
-                            {
-                                TempData["AlertMessage"] = "Your account has been suspended. Please contact support for assistance.";
-                                TempData["AlertType"] = "warning";
-                            }
-                            else
-                            {
-                                ModelState.AddModelError("", "Invalid role.");
+                                case "Admin":
+                                case "User":
+                                    return RedirectToAction("Index", "HomePage");
+                                case "Suspended":
+                                    TempData["AlertMessage"] = "Your account has been suspended. Please contact support for assistance.";
+                                    TempData["AlertType"] = "warning";
+                                    break;
+                                default:
+                                    TempData["AlertMessage"] = "Invalid role assigned to account.";
+                                    TempData["AlertType"] = "danger";
+                                    break;
                             }
                         }
-                        
                     }
                     catch (Exception ex)
                     {
-                        // Log error (you can use a logger instead of displaying the exception)
-                        ModelState.AddModelError("", "An error occurred while processing your request: " + ex.Message);
+                        // Log error and show user-friendly message
+                        Debug.WriteLine($"Sign-in error: {ex.Message}");
+                        TempData["AlertMessage"] = "An error occurred while signing in. Please try again.";
+                        TempData["AlertType"] = "danger";
                     }
                 }
             }
+            else
+            {
+                // Model validation failed
+                TempData["AlertMessage"] = "Please enter valid email and password.";
+                TempData["AlertType"] = "danger";
+            }
 
-            // If validation fails or login is unsuccessful, return the same view with errors
+            // If we get here, something went wrong
             return View(model);
         }
 

@@ -20,7 +20,7 @@ namespace NetworkingProject.Controllers
                 return RedirectToAction("Login", "Account"); // Redirect to login if the user is not logged in
             }
 
-            string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ToString();
+            string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
             List<BookModel> libraryBooks = new List<BookModel>();
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -59,71 +59,104 @@ namespace NetworkingProject.Controllers
 
         public ActionResult AddToLibrary(string userEmail, List<BookModel> cart, List<BookModel> borrowedBooks)
         {
-
-            if (string.IsNullOrEmpty(userEmail) || (cart == null && borrowedBooks == null))
+            if (string.IsNullOrEmpty(userEmail))
             {
-                return Json(new { success = false, message = "No data to process or user not logged in." }, JsonRequestBehavior.AllowGet);
+                return Json(new { success = false, message = "User email is required" }, JsonRequestBehavior.AllowGet);
             }
 
-            string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ToString();
+            string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 try
                 {
                     connection.Open();
-
-                    // Insert only "Buy" books from Cart into Library
-                    if (cart != null)
+                    using (SqlTransaction transaction = connection.BeginTransaction())
                     {
-                        var booksToBuy = cart.Where(book => book.SelectedAction == "Buy").ToList();
-
-                        foreach (var book in booksToBuy)
+                        try
                         {
-                            string insertQuery = @"
-                        INSERT INTO Library (UserEmail, BookTitle, TypeOfPurchase, Format)
-                        SELECT @UserEmail, @BookTitle, 'Buy', @Format
-                        WHERE NOT EXISTS (
-                            SELECT 1 FROM Library WHERE UserEmail = @UserEmail AND BookTitle = @BookTitle
-                        )";
+                            int insertedBooks = 0;
 
-                            using (SqlCommand cmd = new SqlCommand(insertQuery, connection))
+                            // Process bought books
+                            if (cart != null && cart.Any())
                             {
-                                cmd.Parameters.AddWithValue("@UserEmail", userEmail);
-                                cmd.Parameters.AddWithValue("@BookTitle", book.Title);
-                                cmd.Parameters.AddWithValue("@Format", book.SelectedFormat ?? "Unknown"); // e.g., PDF, ePub
-                                cmd.ExecuteNonQuery();
+                                foreach (var book in cart)
+                                {
+                                    string insertQuery = @"
+                                IF NOT EXISTS (
+                                    SELECT 1 FROM Library 
+                                    WHERE UserEmail = @UserEmail 
+                                    AND BookTitle = @BookTitle
+                                )
+                                BEGIN
+                                    INSERT INTO Library (
+                                        UserEmail, BookTitle, TypeOfPurchase, 
+                                        Format, DateAdded
+                                    )
+                                    VALUES (
+                                        @UserEmail, @BookTitle, @TypeOfPurchase, 
+                                        @Format, GETDATE()
+                                    )
+                                END";
+
+                                    using (SqlCommand cmd = new SqlCommand(insertQuery, connection, transaction))
+                                    {
+                                        cmd.Parameters.AddWithValue("@UserEmail", userEmail);
+                                        cmd.Parameters.AddWithValue("@BookTitle", book.Title);
+                                        cmd.Parameters.AddWithValue("@TypeOfPurchase", book.SelectedAction);
+                                        cmd.Parameters.AddWithValue("@Format", book.SelectedFormat ?? "Digital");
+                                        insertedBooks += cmd.ExecuteNonQuery();
+                                    }
+                                }
                             }
+
+                            // Process borrowed books
+                            if (borrowedBooks != null && borrowedBooks.Any())
+                            {
+                                foreach (var book in borrowedBooks)
+                                {
+                                    string insertQuery = @"
+                                IF NOT EXISTS (
+                                    SELECT 1 FROM Library 
+                                    WHERE UserEmail = @UserEmail 
+                                    AND BookTitle = @BookTitle
+                                )
+                                BEGIN
+                                    INSERT INTO Library (
+                                        UserEmail, BookTitle, TypeOfPurchase, 
+                                        Format, DateAdded
+                                    )
+                                    VALUES (
+                                        @UserEmail, @BookTitle, 'Borrow', 
+                                        @Format, GETDATE()
+                                    )
+                                END";
+
+                                    using (SqlCommand cmd = new SqlCommand(insertQuery, connection, transaction))
+                                    {
+                                        cmd.Parameters.AddWithValue("@UserEmail", userEmail);
+                                        cmd.Parameters.AddWithValue("@BookTitle", book.Title);
+                                        cmd.Parameters.AddWithValue("@Format", book.SelectedFormat ?? "Digital");
+                                        insertedBooks += cmd.ExecuteNonQuery();
+                                    }
+                                }
+                            }
+
+                            transaction.Commit();
+                            Console.WriteLine($"Successfully added {insertedBooks} books to library for user {userEmail}");
+                            return Json(new { success = true, message = "Books successfully added to library" }, JsonRequestBehavior.AllowGet);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error adding books to library: {ex.Message}");
+                            transaction.Rollback();
+                            throw;
                         }
                     }
-
-                    // Insert borrowed books from BorrowedCart into Library
-                    if (borrowedBooks != null)
-                    {
-                        foreach (var book in borrowedBooks)
-                        {
-                            string insertQuery = @"
-                        INSERT INTO Library (UserEmail, BookTitle, TypeOfPurchase, Format)
-                        SELECT @UserEmail, @BookTitle, 'Borrow', @Format
-                        WHERE NOT EXISTS (
-                            SELECT 1 FROM Library WHERE UserEmail = @UserEmail AND BookTitle = @BookTitle
-                        )";
-
-                            using (SqlCommand cmd = new SqlCommand(insertQuery, connection))
-                            {
-                                cmd.Parameters.AddWithValue("@UserEmail", userEmail);
-                                cmd.Parameters.AddWithValue("@BookTitle", book.Title);
-                                cmd.Parameters.AddWithValue("@Format", book.SelectedFormat ?? "Unknown");
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-                    }
-
-                    return Json(new { success = true, message = "Books successfully added to library." }, JsonRequestBehavior.AllowGet);
                 }
                 catch (Exception ex)
                 {
-                    // Log error
-                    return Json(new { success = false, message = "An error occurred: " + ex.Message }, JsonRequestBehavior.AllowGet);
+                    Console.WriteLine($"Database error: {ex.Message}");
+                    return Json(new { success = false, message = $"Failed to add books to library: {ex.Message}" }, JsonRequestBehavior.AllowGet);
                 }
             }
         }
@@ -211,6 +244,60 @@ namespace NetworkingProject.Controllers
                     TempData["ErrorMessage"] = "An error occurred: " + ex.Message;
                     return RedirectToAction("Library");
                 }
+            }
+        }
+        [HttpPost]
+        public ActionResult RateAndReview(string bookTitle, string userEmail, int rating, string review)
+        {
+            if (string.IsNullOrEmpty(userEmail) || string.IsNullOrEmpty(bookTitle))
+            {
+                return Json(new { success = false, message = "Invalid parameters" });
+            }
+
+            string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    // Test the connection explicitly
+                    connection.Open();
+
+                    string updateQuery = @"
+                UPDATE Books 
+                SET Rating = @Rating, 
+                    Review = @Review
+                WHERE Title = @BookTitle";
+
+                    using (SqlCommand cmd = new SqlCommand(updateQuery, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@BookTitle", bookTitle);
+                        cmd.Parameters.AddWithValue("@Rating", rating);
+                        cmd.Parameters.AddWithValue("@Review", review ?? (object)DBNull.Value);
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                        if (rowsAffected > 0)
+                        {
+                            return Json(new { success = true, message = "Rating saved successfully" });
+                        }
+                        else
+                        {
+                            return Json(new { success = false, message = "Book not found or no changes made" });
+                        }
+                    }
+                }
+            }
+            catch (SqlException ex)
+            {
+                // Log the detailed error
+                System.Diagnostics.Debug.WriteLine($"SQL Error: {ex.Message}, Number: {ex.Number}");
+                return Json(new { success = false, message = $"Database error: {ex.Message}" });
+            }
+            catch (Exception ex)
+            {
+                // Log the general error
+                System.Diagnostics.Debug.WriteLine($"General Error: {ex.Message}");
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
             }
         }
 

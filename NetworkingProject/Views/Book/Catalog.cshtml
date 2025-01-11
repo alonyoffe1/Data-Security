@@ -102,29 +102,59 @@
                                 <span class="fs-5 fw-bold text-primary">@book.Price.ToString("0.00")$</span>
                             }
                         }
-                        <div class="d-flex flex-column gap-2">
-                            @if (ViewBag.IsAdmin)
+                    <div class="d-flex flex-column gap-2">
+                        @if (ViewBag.IsAdmin)
                             {
-                                <a href="@Url.Action("DeleteBook", "Admin", new { id = book.Title })"
-                                   class="btn btn-danger btn-sm px-4 fw-bold"
-                                   onclick="return confirm('Are you sure you want to delete this book?');">
-                                    Delete Book →
-                                </a>
+                        <a href="@Url.Action("DeleteBook", "Admin", new { id = book.Title })"
+                           class="btn btn-danger btn-sm px-4 fw-bold"
+                           onclick="return confirm('Are you sure you want to delete this book?');">
+                            Delete Book →
+                        </a>
                             }
-                            <a href="#"
-                               class="btn btn-primary btn-sm px-4 fw-bold"
-                               data-bs-toggle="modal"
-                               data-bs-target="#formatSelectionModal"
-                               onclick="openFormatModal('@book.Title', '@book.Author', 'Buy')">
-                                Buy Now →
-                            </a>
-                            <a href="#"
-                               class="btn btn-secondary btn-sm px-4 fw-bold"
-                               onclick="openFormatModal('@book.Title', '@book.Author', 'Borrow')">
-                                Borrow for @book.BorrowPrice
-                            </a>
+                        <a href="#"
+                           class="btn btn-primary btn-sm px-4 fw-bold"
+                           data-bs-toggle="modal"
+                           data-bs-target="#formatSelectionModal"
+                           onclick="openFormatModal('@book.Title', '@book.Author', 'Buy')">
+                            Buy Now →
+                        </a>
+                        <a href="#"
+                           class="btn btn-secondary btn-sm px-4 fw-bold"
+                           onclick="openFormatModal('@book.Title', '@book.Author', 'Borrow')">
+                            Borrow for @book.BorrowPrice
+                        </a>
 
+                        <div class="ratings-section mt-2">
+                            @if (book.Rating > 0)
+    {
+                            <div class="average-rating mb-2">
+                                <span class="fw-bold">Rating: </span>
+                                @for (int i = 1; i <= 5; i++)
+            {
+                if (i <= book.Rating)
+                {
+                                <span class="text-warning">@i</span>
+                }
+                else
+                {
+                                <span class="text-muted">@i</span>
+                }
+            }
+                            </div>
+                            
+                            <div class="review-section">
+                                <h6 class="fw-bold">Review:</h6>
+                                <p class="review-text mb-1">@book.Review</p>
+                            </div>
+                             
+    }
+    else
+    {
+                            <p class="text-muted">No reviews yet</p>
+    }
                         </div>
+
+                    </div>
                     </div>
                 </div>
             </div>
