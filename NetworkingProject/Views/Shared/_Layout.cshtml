@@ -452,8 +452,7 @@
                     <div class="d-flex justify-content-between">
                         <button class="btn btn-primary" id="updateUserBtn" onclick="openUpdateUserModal()">Update</button>
                         <button class="btn btn-warning" id="suspendUserBtn" onclick="toggleUserSuspension()">Suspend</button>
-
-                        <button class="btn btn-danger" id="deleteUserBtn" onclick="deleteUser()">Delete</button>
+                        <button class="btn btn-danger" id="deleteUserBtn" onclick="confirmUserDeletion()">Delete</button>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -676,6 +675,49 @@
                 alert("An error occurred while checking the email.");
             });
         }
+        function confirmUserDeletion() {
+            const email = document.getElementById('userEmail').value.trim();
+
+            if (!email) {
+                alert('Please enter the user email to delete.');
+                return;
+            }
+
+            const confirmation = confirm(`Are you sure you want to delete the user with email: ${email}? This action cannot be undone.`);
+
+            if (confirmation) {
+                deleteUser(email);
+            }
+        }
+
+        function deleteUser() {
+            const emailInput = document.getElementById("userEmail");
+            const email = emailInput.value;
+
+            if (!email) {
+                alert("Please enter an email to delete.");
+                return;
+            }
+
+            fetch('/Accounts/DeleteUser', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({ email: email })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    if (data.success) {
+                        emailInput.value = ''; // Clear the input
+                    }
+                })
+                .catch(error => {
+                    alert("An error occurred: " + error.message);
+                });
+        }
+
     </script>
 </body>
 </html>

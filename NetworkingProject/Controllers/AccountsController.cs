@@ -132,7 +132,6 @@ namespace NetworkingProject.Controllers
             return View(model);
         }
 
-
         [HttpGet]
         public JsonResult CheckEmailExists(string email)
         {
@@ -153,6 +152,39 @@ namespace NetworkingProject.Controllers
 
             // Return the result as JSON
             return Json(new { exists = emailExists }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult SendPasswordResetEmail(string ResetEmail)
+        {
+            var emailService = new EmailService();
+            string subject = "Reset Your Password";
+            string body = $@"
+                    <html>
+                    <body>
+                        <h2>Reset Your Password</h2>
+                        <p>Dear User,</p>
+                        <p>We received a request to reset your password. Click the link below to proceed with resetting your password:</p>
+                        <p><a href='https://yourwebsite.com/Accounts/ResetPassword?email={ResetEmail}'>Reset Password</a></p>
+                        <p>If you did not request this, you can safely ignore this email.</p>
+                        <p>Best regards,</p>
+                        <p>Your Support Team</p>
+                    </body>
+                    </html>";
+
+            try
+            {
+                // Send the email
+                emailService.SendEmail(ResetEmail, subject, body);
+
+                // Return a success response
+                return Json(new { success = true, message = "Password reset email sent successfully." });
+            }
+            catch (Exception ex)
+            {
+                // Handle any error that occurs during email sending
+                return Json(new { success = false, message = "An error occurred: " + ex.Message });
+            }
         }
 
         [HttpGet]
@@ -326,6 +358,49 @@ namespace NetworkingProject.Controllers
             {
                 // Log the exception and return an error response
                 Console.WriteLine($"Error in ToggleUserSuspension: {ex.Message}");
+                return Json(new { success = false, message = "An error occurred while processing the request." });
+            }
+        }
+        public JsonResult DeleteUser(string email)
+        {
+            try
+            {
+                string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    // Query to check if the user exists
+                    var checkUserQuery = "SELECT COUNT(*) FROM Users WHERE Email = @Email";
+                    using (var checkCommand = new SqlCommand(checkUserQuery, connection))
+                    {
+                        checkCommand.Parameters.AddWithValue("@Email", email);
+
+                        var userExists = (int)checkCommand.ExecuteScalar() > 0;
+
+                        if (!userExists)
+                        {
+                            // If no user is found, return a failure response
+                            return Json(new { success = false, message = "User not found." });
+                        }
+
+                        // Delete the user
+                        var deleteUserQuery = "DELETE FROM Users WHERE Email = @Email";
+                        using (var deleteCommand = new SqlCommand(deleteUserQuery, connection))
+                        {
+                            deleteCommand.Parameters.AddWithValue("@Email", email);
+                            deleteCommand.ExecuteNonQuery();
+                        }
+
+                        return Json(new { success = true, message = "User deleted successfully." });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception and return an error response
+                Console.WriteLine($"Error in DeleteUser: {ex.Message}");
                 return Json(new { success = false, message = "An error occurred while processing the request." });
             }
         }

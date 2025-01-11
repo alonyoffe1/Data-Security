@@ -11,17 +11,19 @@
     <title>Sign-In</title>
     <meta name="description" content="ИСРАДОН">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Stylesheets -->
-    <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/bootstrap.min.css">
+    <!-- Bootstrap Bundle with Popper.js for modal functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    @*<link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/bootstrap.min.css">*@
     <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/stylesheet.css">
     <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/main.css">
     <link id="css-link" rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/newtheme.css">
     <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/slick.css">
     <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/slick-theme.css">
     <link rel="stylesheet" type="text/css" href="/css/SignIn_Page_assets/bootstrap-datetimepicker.min.css">
-
-    <!-- Fonts -->
+    Fonts
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
@@ -72,10 +74,101 @@
                     </div>
 
                     <div class="col-sm-6 text-right hidden-xs">
-                        <span class="link-text">Forgot password? <a href="#" class="login-forgotten">Reset</a></span>
+                        <span class="link-text">Forgot password? <a href="#" id="forgotPasswordLink">Reset</a></span>
                     </div>
                 </div>
             </div>
         </form>
     </div>
+    <!-- Reset Password Modal -->
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resetPasswordModalLabel">Reset Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="resetPasswordForm">
+                        <div class="form-group">
+                            <label for="ResetEmail">Email</label>
+                            <input type="email" id="ResetEmail" name="ResetEmail" class="form-control" placeholder="Enter your email" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="ConfirmResetEmail">Confirm Email</label>
+                            <input type="email" id="ConfirmResetEmail" name="ConfirmResetEmail" class="form-control" placeholder="Confirm your email" required />
+                        </div>
+                        <button id="sendResetLinkButton" type="submit" class="btn btn-primary mt-3">Send Reset Link</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Trigger Reset Password Modal -->
+    <script>
+        // Show the reset password modal
+        document.querySelector('#forgotPasswordLink').addEventListener('click', function (event) {
+            event.preventDefault();
+
+            // Ensure that Bootstrap's modal functionality is available
+            var resetModalElement = document.getElementById('resetPasswordModal');
+            var resetModal = new bootstrap.Modal(resetModalElement);
+
+            // Show the modal
+            resetModal.show();
+        });
+        // Handle the reset password form submission
+        document.querySelector('#resetPasswordForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            // Get email values
+            const resetEmail = document.querySelector('#ResetEmail').value;
+            const confirmResetEmail = document.querySelector('#ConfirmResetEmail').value;
+
+            // Validate emails
+            if (resetEmail !== confirmResetEmail) {
+                alert("Emails do not match. Please try again.");
+                return;
+            }
+
+            // Disable the button to prevent multiple submissions
+            const submitButton = document.querySelector('#sendResetLinkButton');
+            submitButton.disabled = true;
+            submitButton.textContent = "Sending...";
+
+            // Send the request
+            fetch('/Accounts/SendPasswordResetEmail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ ResetEmail: resetEmail, ConfirmResetEmail: confirmResetEmail })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error("Failed to send the password reset email.");
+                    }
+                })
+                .then(data => {
+                    // Close the modal and show success message
+                    var resetModal = bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal'));
+                    resetModal.hide();
+                    alert("Password reset email sent successfully.");
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert("An error occurred while sending the password reset email. Please try again.");
+                })
+                .finally(() => {
+                    // Re-enable the button
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Send Reset Link";
+                });
+        });
+    </script>
 </body>
