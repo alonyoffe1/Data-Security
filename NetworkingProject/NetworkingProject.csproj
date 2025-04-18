@@ -177,6 +177,7 @@
     <Compile Include="Models\AppDbContext.cs" />
     <Compile Include="Models\BookModel.cs" />
     <Compile Include="Models\bookRepository.cs" />
+    <Compile Include="Models\ResetPasswordModel.cs" />
     <Compile Include="Models\LibraryModel.cs" />
     <Compile Include="Models\RegisterModel.cs" />
     <Compile Include="Models\SignInModel.cs" />
@@ -246,6 +247,7 @@
     <Content Include="Views\Book\Catalog.cshtml" />
     <Content Include="Views\ShoppingCart\CartPageWithCart.cshtml" />
     <Content Include="Views\Library\Library.cshtml" />
+    <Content Include="Views\Accounts\ResetPassword.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
