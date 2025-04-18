@@ -7,11 +7,31 @@ using System.Diagnostics;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace NetworkingProject.Controllers
 {
     public class AccountsController : Controller
     {
+        public static string ComputeSHA256Hash(string text)
+        {
+            // Create a SHA256 hash object
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                // Convert the input string to a byte array and compute the hash
+                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(text));
+
+                // Convert byte array to a string
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2")); // Convert to hexadecimal string
+                }
+                return builder.ToString();
+            }
+        }
+
         //sign in segment
         public ActionResult SignIn()
         {
@@ -24,7 +44,7 @@ namespace NetworkingProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                string connectionString = "Server=LAPTOP-492M1B9J;Database=NetProj_Web_db;Trusted_Connection=True;";
+                string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
 
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
@@ -89,6 +109,92 @@ namespace NetworkingProject.Controllers
             return View(model);
         }
 
+        //Reset Password segment
+        public ActionResult ResetPassword()
+        {
+            return View(new ResetPasswordModel());
+        }
+
+        // POST: Account/ResetPassword
+        [HttpPost]
+        public ActionResult ResetPassword(ResetPasswordModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                // First check if passwords match
+                if (model.Password != model.ConfirmPassword)
+                {
+                    TempData["AlertMessage"] = "Passwords do not match!";
+                    TempData["AlertType"] = "danger";
+                    return View(model);
+                }
+
+                string connectionString = "Server=localhost;Database=NetProj_Web_db;Trusted_Connection=True;";
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    try
+                    {
+                        connection.Open();
+                        // First check if the email exists
+                        string checkQuery = "SELECT COUNT(*) FROM NetProj_Web_db.dbo.Users WHERE Email = @Email";
+                        using (SqlCommand checkCmd = new SqlCommand(checkQuery, connection))
+                        {
+                            checkCmd.Parameters.AddWithValue("@Email", model.Email);
+                            int userCount = (int)checkCmd.ExecuteScalar();
+
+                            if (userCount == 0)
+                            {
+                                // No user found with this email
+                                TempData["AlertMessage"] = "No account found with this email address.";
+                                TempData["AlertType"] = "danger";
+                                return View(model);
+                            }
+                        }
+
+                        // Now update the password for the user
+                        model.Password = ComputeSHA256Hash(model.Password);
+                        string updateQuery = "UPDATE NetProj_Web_db.dbo.Users SET Password = @Password WHERE Email = @Email";
+                        using (SqlCommand updateCmd = new SqlCommand(updateQuery, connection))
+                        {
+                            updateCmd.Parameters.AddWithValue("@Email", model.Email);
+                            updateCmd.Parameters.AddWithValue("@Password", model.Password);
+
+                            int rowsAffected = updateCmd.ExecuteNonQuery();
+
+                            if (rowsAffected > 0)
+                            {
+                                // Password updated successfully
+                                TempData["AlertMessage"] = "Your password has been reset successfully!";
+                                TempData["AlertType"] = "success";
+                                return RedirectToAction("SignIn", "Accounts");
+                            }
+                            else
+                            {
+                                // Something went wrong with the update
+                                TempData["AlertMessage"] = "Failed to update password. Please try again.";
+                                TempData["AlertType"] = "danger";
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error and show user-friendly message
+                        Debug.WriteLine($"Reset Password error: {ex.Message}");
+                        TempData["AlertMessage"] = "An error occurred while resetting password. Please try again.";
+                        TempData["AlertType"] = "danger";
+                    }
+                }
+            }
+            else
+            {
+                // Model validation failed
+                TempData["AlertMessage"] = "Please enter valid email and password.";
+                TempData["AlertType"] = "danger";
+            }
+            // If we get here, something went wrong
+            return View(model);
+        }
+
         public ActionResult SignOut()
         {
             Session["UserRole"] = null; // Clears the role key stored in the session by the sign in method
@@ -123,7 +229,7 @@ namespace NetworkingProject.Controllers
                         {
                             // Add parameters to prevent SQL injection
                             cmd.Parameters.AddWithValue("@Email", model.Email);
-                            cmd.Parameters.AddWithValue("@Password", model.Password); 
+                            cmd.Parameters.AddWithValue("@Password", ComputeSHA256Hash(model.Password)); 
                             cmd.Parameters.AddWithValue("@FirstName", model.FirstName);
                             cmd.Parameters.AddWithValue("@LastName", model.LastName);
                             cmd.Parameters.AddWithValue("@PhoneNumber", model.PhoneNumber);
@@ -147,6 +253,7 @@ namespace NetworkingProject.Controllers
             return View(model);
         }
 
+
         [HttpGet]
         public JsonResult CheckEmailExists(string email)
         {
@@ -167,39 +274,6 @@ namespace NetworkingProject.Controllers
 
             // Return the result as JSON
             return Json(new { exists = emailExists }, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpPost]
-        public JsonResult SendPasswordResetEmail(string ResetEmail)
-        {
-            var emailService = new EmailService();
-            string subject = "Reset Your Password";
-            string body = $@"
-                    <html>
-                    <body>
-                        <h2>Reset Your Password</h2>
-                        <p>Dear User,</p>
-                        <p>We received a request to reset your password. Click the link below to proceed with resetting your password:</p>
-                        <p><a href='https://yourwebsite.com/Accounts/ResetPassword?email={ResetEmail}'>Reset Password</a></p>
-                        <p>If you did not request this, you can safely ignore this email.</p>
-                        <p>Best regards,</p>
-                        <p>Your Support Team</p>
-                    </body>
-                    </html>";
-
-            try
-            {
-                // Send the email
-                emailService.SendEmail(ResetEmail, subject, body);
-
-                // Return a success response
-                return Json(new { success = true, message = "Password reset email sent successfully." });
-            }
-            catch (Exception ex)
-            {
-                // Handle any error that occurs during email sending
-                return Json(new { success = false, message = "An error occurred: " + ex.Message });
-            }
         }
 
         [HttpGet]
@@ -373,49 +447,6 @@ namespace NetworkingProject.Controllers
             {
                 // Log the exception and return an error response
                 Console.WriteLine($"Error in ToggleUserSuspension: {ex.Message}");
-                return Json(new { success = false, message = "An error occurred while processing the request." });
-            }
-        }
-        public JsonResult DeleteUser(string email)
-        {
-            try
-            {
-                string connectionString = ConfigurationManager.ConnectionStrings["NetProj_Web_db"].ConnectionString;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    // Query to check if the user exists
-                    var checkUserQuery = "SELECT COUNT(*) FROM Users WHERE Email = @Email";
-                    using (var checkCommand = new SqlCommand(checkUserQuery, connection))
-                    {
-                        checkCommand.Parameters.AddWithValue("@Email", email);
-
-                        var userExists = (int)checkCommand.ExecuteScalar() > 0;
-
-                        if (!userExists)
-                        {
-                            // If no user is found, return a failure response
-                            return Json(new { success = false, message = "User not found." });
-                        }
-
-                        // Delete the user
-                        var deleteUserQuery = "DELETE FROM Users WHERE Email = @Email";
-                        using (var deleteCommand = new SqlCommand(deleteUserQuery, connection))
-                        {
-                            deleteCommand.Parameters.AddWithValue("@Email", email);
-                            deleteCommand.ExecuteNonQuery();
-                        }
-
-                        return Json(new { success = true, message = "User deleted successfully." });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log the exception and return an error response
-                Console.WriteLine($"Error in DeleteUser: {ex.Message}");
                 return Json(new { success = false, message = "An error occurred while processing the request." });
             }
         }
