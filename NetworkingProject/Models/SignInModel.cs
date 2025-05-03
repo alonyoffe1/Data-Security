@@ -13,7 +13,6 @@ namespace NetworkingProject.Models
 
         public string Email { get; set; }
 
-        [Required]
         [DataType(DataType.Password)]
         public string Password { get; set; }
         public String Role { get; set; }

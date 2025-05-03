@@ -53,11 +53,12 @@ namespace NetworkingProject.Controllers
                         connection.Open();
 
                         // Query to check if the email and password match
-                        string query = "SELECT Role FROM NetProj_Web_db.dbo.Users WHERE Email = @Email AND Password = @Password";
+                        //string query = "SELECT Role FROM NetProj_Web_db.dbo.Users WHERE Email = @Email AND Password = @Password";
+                        string query = $"SELECT Role FROM NetProj_Web_db.dbo.Users WHERE Email = '{model.Email}' AND Password = '{model.Password}'";
                         using (SqlCommand cmd = new SqlCommand(query, connection))
                         {
-                            cmd.Parameters.AddWithValue("@Email", model.Email);
-                            cmd.Parameters.AddWithValue("@Password", model.Password);
+                            //cmd.Parameters.AddWithValue("@Email", model.Email);
+                            //cmd.Parameters.AddWithValue("@Password", model.Password);
 
                             object result = cmd.ExecuteScalar();
 
